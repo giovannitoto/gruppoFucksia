@@ -1,0 +1,2 @@
+1- Riguardare le 33 variabili esplicative e decidere quali tenere e come trattare gli NA
+2- Guardare gli abstract delle pubblicazioni in PubMed (i PMID del dataset) 
