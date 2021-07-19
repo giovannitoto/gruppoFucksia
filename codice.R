@@ -1,0 +1,1 @@
+load("adenoma.rda")
