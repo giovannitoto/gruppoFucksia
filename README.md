@@ -1,12 +1,17 @@
 # gruppoFucksia - Diario di bordo
 
+## Obiettivi
+- Stimare un classificazone sulla variabile ```study_condition``` utilizzando solo la proporzione delle varie specie di batteri nei soggetti.
+- Stimare un classificazone sulla variabile ```study_condition``` utilizzando sia la proporzione delle varie specie di batteri nei soggetti sia le variabili relative a ogni soggetto e/o ogni specie di batterio.
+- Potrebbe essere interessante provare a ricostruire la tassonomia dei batteri a partire dalle altre variabili.
+
 ## Giorno 1 - 19/07/2021
 
 ### Analisi preliminari del dataset
 Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset che fanno riferimento a 875 specie di batteri e 634 soggetti.
 
 ```colData(se)``` contiene informazioni relative ai 634 soggetti; per ognuno di essi si hanno 33 variabili:
-1. ```study_condition```: 5 studi
+1. ```study_name```: 5 studi
 2. ```subject_id```: 634 individui distinti, quindi si ha una osservazione per ogni soggetto.
 3. ```body_site``` ha un'unica modalità che è stool.
 4. ```antibiotics_current_use```  ha molti valori nulli (529 su 634), tutti i rimanenti sono 'no', quindi buttiamo la variabile.
@@ -18,7 +23,7 @@ Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset
 10. ```country``` ha 6 modalità: CAN (25), USA (29), ITA (51), FRA (103), AUT (108), JPN (318).
 11. ```non_westernized``` ha un'unica modalità, quindi la droppiamo.
 12. ```sequencing_platform``` ha un'unica modalità, quindi la droppiamo.
-13. ```DNA_extraction_kit``` indica come è stato estratto il DNA: per circa metà dei soggetti non è riportato il metodo (valore mancante), ergo buttiamo la variabile.
+13. ```DNA_extraction_kit``` indica come è stato estratto il DNA: per circa metà dei soggetti non è riportato il metodo (tutte e solo i soggetti dello studio Yachida_2019), ergo buttiamo la variabile.
 14. ```PMID``` è un identificatore del dataset PUBMED, quindi lo droppiamo; è utile solo per ricavare la pubblicazione di riferimento.
 15. ```number_reads``` è il numeri di frammenti di DNA disponibili per il soggetto.
 16. ```number_bases``` è il numero di basi per il soggetto; si noti che un read è formato da una sequenza di basi.
@@ -51,15 +56,58 @@ Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset
 7. ```Species``` ha 875 modalità, una per ogni specie di batterio.
 
 
+```assay(se)``` è una matrice *specie x soggetto* il cui elemento *(i,j)* indica la proporzione della specie batterio *i* sul totale delle specie di batteri nel soggetto *j*; si ha quindi che ogni riga somma a 1. Come prima cosa, rimuoviamo i batteri che non compaiono in nessun soggetto, passando così da 875 a 789 specie di batteri. A questo punto si rimuovono i batteri che presentano una proporzione molto bassa in tutti i soggetti: per adesso si seleziona 0.1% (0.001) come soglia, passando da 789 a 502 specie.
+
+
+### Gestione delle variabili in ```colData(se)```
+Costruiamo due dataset: il primo, detto se_fix_clinical, contiene solo variabili cliniche e il secondo, se_fix, contiene tutte le variabili disponibili e utili.
+1. ```NO NO``` ```study_name```: inutile.
+2. ```NO NO``` ```subject_id```: tutti distinti.
+3. ```NO NO``` ```body_site```: unica modalità.
+4. ```NO NO``` ```antibiotics_current_use```: troppi NA.
+5. ```SI SI``` ```study_condition```: variabile risposta.
+6. ```NO NO``` ```disease```: non utile per predere ```study_condition```; potrebbe essere utile per costruire una var. risposta muldimodale.
+7. ```SI SI``` ```age```: variabile numerica.
+8. ```NO NO``` ```age_category```: informazione già contenuta in ```age```.
+9. ```SI SI``` ```gender```: fattore con 2 modalità.
+10. ```SI SI``` ```country```: fattore con 6 modalità.
+11. ```NO NO``` ```non_westernized```: unica modalità.
+12. ```NO NO``` ```sequencing_platform```: unica modalità.
+13. ```NO NO``` ```DNA_extraction_kit```: troppi NA **(inutile?)**.
+14. ```NO NO``` ```PMID```: inutile.
+15. ```NO SI``` ```number_reads```: variabile quantitativa.
+16. ```NO NO``` ```number_bases```: correlazione superiore a 0.9 con ```number_basis```.
+17. ```NO SI``` ```minimum_read_length```: variabile quantitativa. 
+18. ```NO SI``` ```median_read_length```: variabile quantitativa.
+19. ```NO NO``` ```NCBI_accession```: troppi NA.
+20. ```NO NO``` ```curator```: inutile.
+21. ```SI SI``` ```BMI```: variabile quantitativa. **7 valori mancanti => rimuoviamo soggetti corrispondenti**
+22. ```NO NO``` ```location```: troppi NA.
+23. ```disease_subtype``` è una variabile risposta alternativa che permette di effettuare analisi più approfondite passando da classificazione a multiclassificazione.
+24. ```alcohol``` indica se abbiamo a che fare con un alcolizzato; pieno di valori nulli.
+25. ```triglycerides``` è una variabile numerica piena di valori nulli (528), ergo la buttiamo.
+26. ```hdl``` è piena di valori nulli (529), ergo la buttiamo.
+27. ```ldl``` è piena di valori nulli (529), ergo la buttiamo; verosimilmente coincidono con quelle della variabile ```hdl```.
+28. ```hba1c``` è una variabile numerica che fa riferimento all'emoglobina glicata, ovvero l'emoglobina col glucosio; è piena di valori nulli (562), ergo le buttiamo.
+29. ```smoker``` indica se abbiamo a che fare con un fumatore; pieno di valori nulli.
+30. ```ever_smoker``` indica se il soggetto ha mai fumato; piena di valori nulli.
+31. ```fobt``` indica la presenza di sangue occulto nelle feci; piena di valori nulli (478); unico aspetto positivo è che abbiamo sia dei SI sia dei NO.
+32. ```brinkman_index``` è una misura di esposizione al fumo di sigaretta; si hanno 317 valori nulli, i valori rimanenti sono interi tra 0 e 3200.
+33. ```alcohol_numeric``` è indicatore di quanto si imbriaga di solito; si hanno 317 valori nulli; si  noti che questa variabile e ```brinkman_index``` sono state raccolte nello studio Yachida_2019.
+
+
 ### Domande
 - ```disease_subtype``` ha un sacco di valori nulli: corrispondono a mancate osservazioni oppure ad altro?
-- ```alcohol``` ha 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?
-- ```smooker``` ha 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?
-- ```ever_smoker``` ha 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?
-
-
-### Chicche
-- Potrebbe essere interessante provare a ricostruire la tassonomia dei batteri a partire dalle altre variabili.
+- **```alcohol```, ```smooker``` e ```ever_smoker``` hanno 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?** Non ha senso farsi tanti problemi: buttiamo tutto via.
+- La variabile ```DNA_extraction_kit```, che indica il metodo di estrazione del DNA, è utile? Ha senso utilizzarla solo se si considerano anche le proporzioni delle specie di batteri nei soggetti, giusto?
+- Vogliamo utilizzare solo informazioni relative ad esami semplici da effettuare oppure vogliamo considerare tutta l'informazione disponibile? Più nello specifico, voglio utilizzare variabili ottenute in seguito alla sequenziazione del DNA.
+- Meglio eliminare soggetti a causa di pochi valori mancanti oppure fare imputazione in qualche modo?
+ 
+ 
+ 
+### Da fare
+- Leggere almeno gli abstract degli articoli contenuti in ```colData(se)$PMID```.
+- Finire la gestione delle variabili in ```colData(se)```.
 
 
 ## Giorno 2 - 20/07/2021
