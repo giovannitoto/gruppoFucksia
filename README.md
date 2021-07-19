@@ -41,18 +41,14 @@ Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset
 33. ```alcohol_numeric``` è indicatore di quanto si imbriaga di solito; si hanno 317 valori nulli; si  noti che questa variabile e ```brinkman_index``` sono state raccolte nello studio Yachida_2019.
 
 
-
-
-```rowData(se)``` contiene informazioni relative alle 875 specie di batteri; per ognuna di esse si hanno 7 variabili:
-1.
-2.
-3.
-4.
-5.
-6.
-7.
-
-
+```rowData(se)``` contiene la tassonomia delle 875 specie di batteri osservate; per ognuna di esse si hanno 7 variabili:
+1. ```Kingdom``` ha tre modalità: Archaea (7), Bacteria (863) e Eukaryota (5); fattore estremamente sbilanciato.
+2. ```Phylum``` ha 17 modalità di cui le prime 4 rappresetano il 94% del dataset (prime nel senso con maggior frequenza); **ha senso accorpare le rimanenti in "altro"?**
+3. ```Class``` ha 32 modalità di cui le prime 3 rappresentano il 55% del dataset, le prime 5 il 76%, le prime 6 l'81%; **ha senso accorpare le rimanenti in "altro"? Come?**
+4. ```Order``` ha 50 modalità di cui le prime 4 rappresetano il 60% del dataset, le prima 7 il 69%; **ha senso accorpare le rimanenti in "altro"?**
+5. ```Family``` ha 97 modalità con frequenza distribuita abbastanza equamente; non è così intuitivo fare accorpamenti vari.
+6. ```Genus``` ha 256 modalità.
+7. ```Species``` ha 875 modalità, una per ogni specie di batterio.
 
 
 ### Domande
@@ -61,6 +57,9 @@ Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset
 - ```smooker``` ha 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?
 - ```ever_smoker``` ha 48 NO e rimanenti NA, gli NA corrispondono ad astenuti oppure SI?
 
+
+### Chicche
+- Potrebbe essere interessante provare a ricostruire la tassonomia dei batteri a partire dalle altre variabili.
 
 
 ## Giorno 2 - 20/07/2021
