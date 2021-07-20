@@ -1,9 +1,9 @@
 # gruppoFucksia - Diario di bordo
 
 ## Obiettivi
-- Stimare un classificazone sulla variabile ```study_condition``` utilizzando solo la proporzione delle varie specie di batteri nei soggetti.
-- Stimare un classificazone sulla variabile ```study_condition``` utilizzando sia la proporzione delle varie specie di batteri nei soggetti sia le variabili relative a ogni soggetto e/o ogni specie di batterio.
-- Applicare group lasso considerando gruppi di specie di batteri, in accordo con la tassonomia.
+- Stimare un classificazione sulla variabile ```study_condition``` utilizzando solo la proporzione delle varie specie di batteri nei soggetti.
+- Stimare un classificazione sulla variabile ```study_condition``` utilizzando sia la proporzione delle varie specie di batteri nei soggetti sia le variabili relative a ogni soggetto e/o ogni specie di batterio.
+- Applicare *group lasso* considerando gruppi di specie di batteri, in accordo con la tassonomia.
 - Potrebbe essere interessante provare a ricostruire la tassonomia dei batteri a partire dalle altre variabili.
 
 ## Giorno 1 - 19/07/2021
@@ -15,9 +15,9 @@ Nel file adenoma.rda abbiamo un oggetto ```se``` contenente una serie di dataset
 2. ```subject_id```: 634 individui distinti, quindi si ha una osservazione per ogni soggetto.
 3. ```body_site``` ha un'unica modalità che è stool.
 4. ```antibiotics_current_use``` ha molti valori nulli (529 su 634), tutti i rimanenti sono 'no', quindi buttiamo la variabile.
-5. ```study_condition```: 209 malati (33%) e 429 controlli (67%)
+5. ```study_condition```: 209 malati (33%) e 429 controlli (67%).
 6. ```disease``` contiene un eventuali malattie aggiuntive del soggetto: da notare che anche i controlli possono avere delle malattie; la modalità adenoma fa riferimento ai malati che non hanno ulteriori malattie; sarebbe molto utile fare la tabella di frequenze congiunte delle variabili ```study_condition``` e ```disease```.
-7. ```age``` va da 21 a 89 anni, concentrata tra i 60 e 70, la mediana è 64. Facendo dei boxplot condizionatamente a study_condition, si osserva la stessa mediana ma maggior variabilità nei controlli: ha senso poiché sono il doppio.
+7. ```age``` va da 21 a 89 anni, concentrata tra i 60 e 70, la mediana è 64. Facendo dei boxplot condizionatamente a ```study_condition```, si osserva la stessa mediana ma maggior variabilità nei controlli: ha senso poiché sono il doppio.
 8. ```age_category``` è una versione aggregata di ```age```.
 9. ```gender``` presenta due generi: 278 femmine (44%) e 356 maschi (56%).
 10. ```country``` ha 6 modalità: CAN (25), USA (29), ITA (51), FRA (103), AUT (108), JPN (318).
@@ -106,7 +106,22 @@ Concludiamo le analisi esplorative e gestione delle variabili in ```colData(se)`
 ### Filtraggio e analisi preliminari in ```t(assay(se))```
 ```assay(se)``` è una matrice *specie x soggetto* il cui elemento *(i,j)* indica la proporzione della specie batterio *i* sul totale delle specie di batteri nel soggetto *j*; si ha quindi che ogni riga somma a 1. Come prima cosa, rimuoviamo le specie di batteri che non compaiono in nessun soggetto, passando così da 875 a 789 specie di batteri. A questo punto si rimuovono le specie che presentano una proporzione molto bassa in tutti i soggetti: per adesso si seleziona 0.1% (0.001) come soglia, passando da 789 a 502 specie.
 
-Osserviamo che le specie 418, 419 e 420 hanno correlazione pari a 1 e quindi sono collinerì; analogamente le specie 250 e 493 sono collineari.
+Osserviamo che le specie 418, 419 e 420 hanno correlazione pari a 1 e quindi sono collineari; analogamente le specie 250 e 493 sono collineari.
+
+# Creazione dei dataset
+Generiamo due dataset *soggetto x variabile* come segue:
+- ```data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))```  \[627x(6+502)\]
+- ```data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))```  \[627x(6+502)\]
+
+e li salviamo nel file `dataset_fix_fixcl.Rdata`.
+
+Si noti che a questo punto non sono ancora state rimosse le variabili collineari citate nella sezione precedente.
+
+### Classificazione di study_condition a livello di specie
+Prima di applicari i modelli, rimuoviamo le variabili collineari, ovverto le variabili in posizione 419+(6|9), 420+(6|9), 493+(6|9).
+Visto che fornisce risultati migliori, decidiamo di fare *Convalida Incrociata* (*CV*).
+
+
 
 ### Note
 - Osserviamo che le variabili ```triglycerides```, ```hdl```, ```ldl``` hanno valori nulli sui stessi soggetti; inoltre sono disponibili solo nello studio FengQ_2015; potrebbe aver senso considerare solo i soggetti dello studio FengQ_2015?
