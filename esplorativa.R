@@ -12,7 +12,6 @@ dim(colData(se))
 colData(se)
 
 #Creo una copia del dataset
-se_fix_clinical <- se
 se_fix <- se
 'Guardo le covariate una per una'
 
@@ -22,7 +21,6 @@ table(se$study_name) # abbiamo 5 studi
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "study_name")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "study_name")]
 
 # subject_id
 table(is.na(se$subject_id))
@@ -30,7 +28,6 @@ length(unique(se$subject_id)) # tutti i soggetti osservati una sola volta
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "subject_id")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "subject_id")]
 
 # body_site
 table(is.na(se$body_site))
@@ -38,7 +35,6 @@ table(se$body_site) # sono tutti campioni di feci
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "body_site")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "body_site")]
 
 # antibiotics_current_use
 table(is.na(se$antibiotics_current_use)) # ha tanti NA, da droppare
@@ -46,7 +42,6 @@ table(se$antibiotics_current_use)
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "antibiotics_current_use")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "antibiotics_current_use")]
 
 # study_condition -> variabile risposta
 table(is.na(se$study_condition))
@@ -54,7 +49,6 @@ table(se$study_condition)
 prop.table(table(se$study_condition))
 str(se$study_condition)
 se_fix$study_condition <- as.factor(se_fix$study_condition)
-se_fix_clinical$study_condition <- as.factor(se_fix_clinical$study_condition)
 
 # disease -> altra possibile variabile risposta, assolutamente non una esplicativa
 table(is.na(se$disease))
@@ -63,7 +57,6 @@ t(table(se$disease, se$study_condition))
 
 #-> non è una variabile esplicativa clinica
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "disease")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "disease")]
 
 # age
 table(is.na(se$age))
@@ -79,21 +72,18 @@ str(se$age_category)
 
 #-> in relazione deterministica con age
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "age_category")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "age_category")]
 
 # gender
 table(is.na(se$gender))
 prop.table(table(se$gender))
 str(se$gender)
 se_fix$gender <- as.factor(se_fix$gender)
-se_fix_clinical$gender <- as.factor(se_fix_clinical$gender)
 
 # country
 table(is.na(se$country))
 prop.table(table(se$country))
 str(se$country)
 se_fix$country <- as.factor(se_fix$country)
-se_fix_clinical$country <- as.factor(se_fix_clinical$country)
 
 # non_westernized
 table(is.na(se$non_westernized))
@@ -101,7 +91,6 @@ prop.table(table(se$non_westernized)) # inultile
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "non_westernized")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "non_westernized")]
 
 # sequencing_platform
 table(is.na(se$sequencing_platform))
@@ -109,7 +98,6 @@ prop.table(table(se$sequencing_platform)) # inultile
 
 #-> non utile per prevedere la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "sequencing_platform")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "sequencing_platform")]
 
 # DNA_extraction_kit (intanto la toglierei)
 table(is.na(se$DNA_extraction_kit)) # metà NA
@@ -119,7 +107,6 @@ table(se$DNA_extraction_kit, se$study_name, useNA = "always") #solo uno studio n
 
 #-> per ora si toglie
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "DNA_extraction_kit")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "DNA_extraction_kit")]
 
 # PMID (inutile, articolo PUBMED)
 table(is.na(se$PMID))
@@ -127,15 +114,12 @@ prop.table(table(se$PMID)) # da togliere
 
 #-> non utile per spiegare la risposta
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "PMID")]
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "PMID")]
 
 # number_reads
 table(is.na(se$number_reads))
 summary(se$number_reads)
 hist(se$number_reads, nclass = 50)
 
-#Si toglie dal dateset clinico
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "number_reads")]
 
 # number_bases (numero di basi di tutte le reads)
 table(is.na(se$number_bases)) 
@@ -144,19 +128,14 @@ hist(se$number_bases, nclass = 50)
 
 cor(se$number_reads, se$number_bases)
 
-#Si toglie dal dateset clinico
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "number_bases")]
 #Si toglie anche dall'altro dataset perché è fortemente correlato con number_bases
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "number_reads")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "number_bases")]
 
 
 # minimum_read_length
 table(is.na(se$minimum_read_length)) 
 summary(se$minimum_read_length)
 table(se$minimum_read_length)
-
-#Si toglie dal dateset clinico
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "minimum_read_length")]
 
 # median_read_length
 table(is.na(se$median_read_length)) 
@@ -166,14 +145,11 @@ table(se$median_read_length)
 cor(se$median_read_length, se$minimum_read_length)
 cor(se$median_read_length, se$number_reads)
 
-#Si toglie dal dateset clinico
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "median_read_length")]
 
 # NCBI_accession -> codice univoco per una sequenza
 table(is.na(se$NCBI_accession)) # troppi NA
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "NCBI_accession")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "NCBI_accession")]
 
 # curator (da togliere)
@@ -182,7 +158,6 @@ table(se$curator)
 levels(as.factor(se$curator))
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "curator")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "curator")]
 
 # BMI (occhio, 7 NA!)
@@ -192,14 +167,12 @@ table(se$BMI)
 
 #dato che sono solo 7 gli NA, togliamo le osservazioni anziché l'intera variabile
 se_fix <- se_fix[,!is.na(se_fix$BMI)]
-se_fix_clinical <- se_fix_clinical[,!is.na(se_fix_clinical$BMI)]
 
 # location (da togliere, troppi NA)
 table(is.na(se$location)) 
 table(se$location)
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "location")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "location")]
 
 
@@ -214,7 +187,6 @@ table(se$disease_subtype, se$study_name, useNA = "always")
 #Sicuramente non è una variabile esplicativa, per ora la togliamo da entrambi i dataset:
 #Valuteremo se usarla come possibile variabile risposta
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "disease_subtype")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "disease_subtype")]
 
 # alcohol
@@ -223,7 +195,6 @@ table(se$alcohol) # ha solo una modalità, non è una variabile
 table(se$alcohol, se$study_condition)
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "alcohol")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "alcohol")]
 
 # triglycerides, da togliere
@@ -233,7 +204,6 @@ table(is.na(se$triglycerides), is.na(se$hdl))
 table(is.na(se$triglycerides), is.na(se$ldl))
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "triglycerides")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "triglycerides")]
 
 # hdl, colesterolo buono, troppi NA
@@ -241,7 +211,6 @@ table(is.na(se$hdl))
 table(is.na(se$hdl), se$study_name)
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "hdl")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "hdl")]
 
 # ldl, colesterolo cattivo, troppi NA
@@ -249,7 +218,6 @@ table(is.na(se$ldl))
 table(is.na(se$ldl), is.na(se$hdl))
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "ldl")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "ldl")]
 
 # hba1c, emoglobina glicata
@@ -258,7 +226,6 @@ summary(se$hba1c)
 table(is.na(se$hba1c), is.na(se$hdl))
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "hba1c")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "hba1c")]
 
 # smoker
@@ -266,7 +233,6 @@ table(is.na(se$smoker))
 table(se$smoker)
 
 #Si toglie dai dataset perché ha solo una modalità e tanti NA
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "smoker")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "smoker")]
 
 # ever_smoker
@@ -274,7 +240,6 @@ table(is.na(se$ever_smoker))
 table(se$ever_smoker)
 
 #Si toglie dai dataset perché ha solo una modalità e tanti NA
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "ever_smoker")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "ever_smoker")]
 
 # fobt -> presenza di sangue occulto nelle feci
@@ -282,7 +247,6 @@ table(is.na(se$fobt))
 table(se$fobt)
 
 #Si toglie dai dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "fobt")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "fobt")]
 
 
@@ -293,7 +257,6 @@ table(se$brinkman_index)
 table(is.na(se$brinkman_index), se$study_name, useNA = "always") #solo in YachidaS_2019
 
 #Per ora si toglie da dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "brinkman_index")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "brinkman_index")]
 
 # alcohol_numeric
@@ -303,7 +266,6 @@ summary(se$alcohol_numeric)
 table(is.na(se$alcohol_numeric), se$study_name, useNA = "always") #solo in YachidaS_2019
 
 #Per ora si toglie da dataset
-colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "alcohol_numeric")]
 colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "alcohol_numeric")]
 
 # Pacchetto table1 per le analisi esplorative (dove si becca? -> dal sui gitHub)
@@ -368,7 +330,6 @@ dim(assay(se))
 dim(se[rowMaxs(assay(se)) != 0,])
 dim(se[rowMaxs(assay(se)) > 0.1,]) #Questo è il filtro che teniamo
 se_fix <- se_fix[rowMaxs(assay(se)) > 0.1,]
-se_fix_clinical <- se_fix_clinical[rowMaxs(assay(se)) > 0.1,]
 
 cor_fix <- cor(t(assay(se_fix))) - diag(1,502)
 row.names(cor_fix) <- NULL
@@ -383,6 +344,10 @@ heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
 dim(colData(se_fix))
 dim(assay(se_fix))
 data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))
-data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))
 
-save(data_fix, data_fix_cl, file = "dataset_fix_fixcl.RData")
+save(data_fix, file = "dataset_fix_fixcl.RData")
+
+# 1: $ study_condition -> risposta
+# 2-4 8 : cliniche
+#  5-7: collegate a microbioma
+# 9-510: proporzioni microbioma
