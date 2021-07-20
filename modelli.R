@@ -1,60 +1,54 @@
-load("adenoma.rda")
+# Modelli con risposta "study_condition"
+# - considerando aggregazione a livello di specie
 
-head(rowData(se))
+load("dataset_fix_fixcl.RData")
 
-# Oggetto generale
-se
-dim(se)
-# le righe sono i soggetti, le colonne le specie di batteri (vero?)
+# Tolgo varaibili collineari
+data_fix <- data_fix[,-c(419+8, 420+8, 493+8)]
+data_fix_cl <- data_fix_cl[,-c(419+5, 420+5, 493+5)]
 
-# Guardo colData, ovvero le caratteristiche degli individui
-dim(colData(se))
-colData(se)
+prop.table(table(data_fix$study_condition))
 
-#assay: relative abundance
-dim(assay(se))
-rownames(assay(se))
+str(data_fix)
 
-#togliamo gli zeri
-dim(se[rowMaxs(assay(se)) > 0.1,])
-se <- se[rowMaxs(assay(se)) > 0.1,]
-rel_abu <- assay(se)
-row_max <- rowMaxs(rel_abu)
-head(row_max)
-boxplot(row_max)
-summary(row_max) #si può stabilire una soglia
+# ---------------------------------------------------------------------------- #
+# K-fold Cross-Validation
+FOLDS <- 10
 
-#Si prova una Random Forest per vedere se ha senso mettere una soglia per filtrare le specie di batteri
-#creo il dataset
-dim(colData(se))
-dim(assay(se))
-idx <- rowMaxs(assay(se)) > 0.1
-s <- as.data.frame(cbind(colData(se), t(assay(se))))
-dim(s)
+folds <- sample(cut(seq(1,nrow(data_fix)), breaks=FOLDS, labels=FALSE))
 
-### RANDOM FOREST (CV)
+cv_errors <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_errors) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_errors <- as.data.frame(cv_errors)
+
+cv_data <- list(data_fix, data_fix[,-c(9:ncol(data_fix))], data_fix[,c(1,9:ncol(data_fix))],
+                data_fix_cl, data_fix_cl[,-c(6:ncol(data_fix_cl))], data_fix_cl[,c(1,6:ncol(data_fix_cl))])
+cv_data_names <- c("data_fix", "data_fix_nobact", "data_fix_bact", "data_cl", "data_cl_nobact", "data_cl_bact")
+
+#########################################################################################
+#########################################################################################
+# RANDOM FOREST + BAGGING
 library(randomForest)
-library(e1071)
 
-set.seed(28)
-forest.tune <- tune(randomForest, study_condition ~ ., data=s,
-                    ranges=list(mtry=2*(2:4)),
-                    tunecontrol=tune.control(cross=5),
-                    ntree=100, na.action = na.roughfix)
-best.mtry <- min(forest.tune$best.parameters, NCOL(s))
-# Grafico
-plot(forest.tune)
-abline(v=best.mtry, lty=2, col=2)
+# SENZA OTTIMIZZAZIONE
+# ---------------------------------------------------------------------------- #
+for(j in 1:length(cv_data)){
+  err <- NULL
+  for(i in 1:FOLDS){
+    testIndexes <- which(folds==i, arr.ind=TRUE)
+    set.seed(123)
+    rf1 <- randomForest(study_condition ~., data=cv_data[[j]][-testIndexes, ], nodesize=1, 
+                        mtry=3, ntree=500, importance = T)
+    # Calcolo tasso di errata classificazione
+    pred <- predict(rf1, newdata=cv_data[[j]][testIndexes, ])
+    tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+    err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+    cat("Data", j, "Fold", i, "\n")
+  }
+  cv_errors <- rbind(cv_errors, c(cv_data_names[j], "RandomForest", mean(err), err))
+}
 
-final.forest <- randomForest(y ~ ., data=s, mtry=best.mtry)
+cv_errors
 
-# Grafico per importanza delle var. nella random forest
-varImpPlot(fit.forest)
+# ---------------------------------------------------------------------------- #
 
-# Previsione
-y.forest.cv <- predict(final.forest, newdata=v)
-et.forest.cv <- tabella.sommario(y.forest.cv, v$y)
-e.forest.cv <- 1 - sum(diag(et.forest.cv))/sum(et.forest.cv)
-tab_confronto <- rbind(tab_confronto,c("Random Forest (CV)", e.forest.cv))
-y.forest.cv.prob <- predict(final.forest, newdata=v, type="prob")
-a.forest.cv <- lift.roc(y.forest.cv.prob[,2], ynum.v, type="crude")
