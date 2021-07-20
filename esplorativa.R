@@ -198,60 +198,120 @@ se_fix_clinical <- se_fix_clinical[,!is.na(se_fix_clinical$BMI)]
 table(is.na(se$location)) 
 table(se$location)
 
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "location")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "location")]
+
+
 # disease_subtype (ha tanti NA, capire perché parlavano di usarla per classificare)
 table(is.na(se$disease_subtype))
 table(se$disease_subtype, se$study_condition, useNA = "always")
 table(se$disease_subtype, se$disease, useNA = "always")
 
 table(se$disease_subtype, se$country, useNA = "always")
+table(se$disease_subtype, se$study_name, useNA = "always")
+
+#Sicuramente non è una variabile esplicativa, per ora la togliamo da entrambi i dataset:
+#Valuteremo se usarla come possibile variabile risposta
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "disease_subtype")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "disease_subtype")]
 
 # alcohol
 table(is.na(se$alcohol))
-table(se$alcohol)
+table(se$alcohol) # ha solo una modalità, non è una variabile
 table(se$alcohol, se$study_condition)
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "alcohol")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "alcohol")]
 
 # triglycerides, da togliere
 table(is.na(se$triglycerides))
 summary(se$triglycerides)
+table(is.na(se$triglycerides), is.na(se$hdl))
+table(is.na(se$triglycerides), is.na(se$ldl))
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "triglycerides")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "triglycerides")]
 
 # hdl, colesterolo buono, troppi NA
 table(is.na(se$hdl))
+table(is.na(se$hdl), se$study_name)
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "hdl")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "hdl")]
 
 # ldl, colesterolo cattivo, troppi NA
 table(is.na(se$ldl))
+table(is.na(se$ldl), is.na(se$hdl))
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "ldl")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "ldl")]
 
 # hba1c, emoglobina glicata
 table(is.na(se$hba1c))
 summary(se$hba1c)
+table(is.na(se$hba1c), is.na(se$hdl))
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "hba1c")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "hba1c")]
 
 # smoker
 table(is.na(se$smoker))
 table(se$smoker)
 
+#Si toglie dai dataset perché ha solo una modalità e tanti NA
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "smoker")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "smoker")]
+
 # ever_smoker
 table(is.na(se$ever_smoker))
 table(se$ever_smoker)
 
-# fobt
+#Si toglie dai dataset perché ha solo una modalità e tanti NA
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "ever_smoker")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "ever_smoker")]
+
+# fobt -> presenza di sangue occulto nelle feci
 table(is.na(se$fobt))
 table(se$fobt)
+
+#Si toglie dai dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "fobt")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "fobt")]
+
 
 # brinkman_index, tant
 table(is.na(se$brinkman_index))
 table(se$brinkman_index)
 
-table(se$brinkman_index, se$study_name, useNA = "always")
+table(is.na(se$brinkman_index), se$study_name, useNA = "always") #solo in YachidaS_2019
+
+#Per ora si toglie da dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "brinkman_index")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "brinkman_index")]
 
 # alcohol_numeric
 table(is.na(se$alcohol_numeric))
 summary(se$alcohol_numeric)
 
+table(is.na(se$alcohol_numeric), se$study_name, useNA = "always") #solo in YachidaS_2019
+
+#Per ora si toglie da dataset
+colData(se_fix_clinical) <- colData(se_fix_clinical)[,which(colnames(colData(se_fix_clinical)) != "alcohol_numeric")]
+colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "alcohol_numeric")]
 
 # Pacchetto table1 per le analisi esplorative (dove si becca? -> dal sui gitHub)
 
 # PMID -> codice PUBMED, con il codice si ottiene il paper pubblicato sui dati
 
-'----------------------------------------------------------------------------------'
+'----------------------------Esplorativa Tassonometria--------------------------------------------'
+
 colnames(rowData(se))
 tmp <- rowData(se)
 
@@ -298,17 +358,31 @@ length(table(tmp$Species))
 sort(table(tmp$Species), decreasing = T)
 #tutte modalità diverse
 
-'---------------------------------------------------------------------------------'
+'----------------------------------Esplorativa Assay-------------------------------------------------'
 #assay: relative abundance
 dim(assay(se))
-rownames(assay(se))
+#rownames(assay(se))
 
 #togliamo gli zeri
-se <- se[rowMaxs(assay(se)) != 0,]
-dim(se[rowMaxs(assay(se)) > 0.1,])
-rel_abu <- assay(se)
-row_max <- rowMaxs(rel_abu)
-head(row_max)
-boxplot(row_max)
-summary(row_max) #si può stabilire una soglia
+#se <- se[rowMaxs(assay(se)) != 0,]
+dim(se[rowMaxs(assay(se)) != 0,])
+dim(se[rowMaxs(assay(se)) > 0.1,]) #Questo è il filtro che teniamo
+se_fix <- se_fix[rowMaxs(assay(se)) > 0.1,]
+se_fix_clinical <- se_fix_clinical[rowMaxs(assay(se)) > 0.1,]
 
+cor_fix <- cor(t(assay(se_fix))) - diag(1,502)
+row.names(cor_fix) <- NULL
+which(cor_fix == 1, arr.ind = T)
+which(cor_fix >= 0.9, arr.ind = T)
+
+col <- colorRampPalette(c("blue", "white", "red"))(200)
+heatmap(cor_fix, col = col, symm = T)
+heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
+
+#Creazione data.frame
+dim(colData(se_fix))
+dim(assay(se_fix))
+data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))
+data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))
+
+save(data_fix, data_fix_cl, file = "dataset_fix_fixcl.RData")
