@@ -1,9 +1,10 @@
+# MAC/Linux
+.DS_Store
+.swp
+
 # History files
 .Rhistory
 .Rapp.history
-
-# Session Data files
-.RData
 
 # User-specific files
 .Ruserdata
