@@ -110,17 +110,29 @@ Osserviamo che le specie 418, 419 e 420 hanno correlazione pari a 1 e quindi son
 
 # Creazione dei dataset
 Generiamo due dataset *soggetto x variabile* come segue:
-- ```data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))```  \[627x(6+502)\]
-- ```data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))```  \[627x(6+502)\]
+- ```data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))```  \[627x(5+502)\]
+- ```data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))```  \[627x(8+502)\]
 
 e li salviamo nel file `dataset_fix_fixcl.Rdata`.
 
 Si noti che a questo punto non sono ancora state rimosse le variabili collineari citate nella sezione precedente.
 
 ### Classificazione di study_condition a livello di specie
-Prima di applicari i modelli, rimuoviamo le variabili collineari, ovverto le variabili in posizione 419+(6|9), 420+(6|9), 493+(6|9).
+Prima di applicari i modelli, rimuoviamo le variabili collineari, ovvero le variabili in posizione 419+(5|8), 420+(5|8), 493+(5|8).
 Visto che fornisce risultati migliori, decidiamo di fare *Convalida Incrociata* (*CV*).
 
+Consideriamo 6 dataset:
+1. data_fix: var. cliniche + var.sui batteri + proporzioni
+2. data_fix[,-c(9:ncol(data_fix))]: var. cliniche + var. sui batteri
+3. data_fix[,c(1,9:ncol(data_fix))]: proporzioni
+4. data_fix_cl: var. cliniche + proporzioni
+5. data_fix_cl[,-c(6:ncol(data_fix_cl))]: var. cliniche
+6. data_fix_cl[,c(1,6:ncol(data_fix_cl))]: proporzioni
+
+
+"data_fix", "data_fix_nobact", "data_fix_bact", "data_cl", "data_cl_nobact", "data_cl_bact"
+
+cv_data <- list(data_fix, )
 
 
 ### Note
