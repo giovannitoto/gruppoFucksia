@@ -270,7 +270,7 @@ colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "body_
 colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "antibiotics_current_use")]
 
 # study_condition -> variabile risposta
-table(se_fix2$study_condition)
+prop.table(table(se_fix2$study_condition))
 str(se_fix2$study_condition)
 se_fix2$study_condition <- as.factor(se_fix2$study_condition)
 
@@ -345,7 +345,7 @@ colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "disea
 table(is.na(se_fix2$alcohol)) #tutta NA -> si toglie
 colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "alcohol")]
 
-# triglycerides, da togliere
+# triglycerides
 table(is.na(se_fix2$triglycerides))
 summary(se_fix2$triglycerides) #ora è ok
 hist(se_fix2$triglycerides, nclass = 50)
@@ -361,77 +361,200 @@ hist(se_fix2$ldl, nclass = 50)
 # hba1c, emoglobina glicata
 table(is.na(se_fix2$hba1c)) # 33 NA, tocca perdere troppe osservazioni: tolgo la variabile
 colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "hba1c")]
-'--------------------SONO ARRIVATO QUI 20/07/21--------------------'
-# smoker
-table(is.na(se_fix2$smoker))
-table(se$smoker)
 
-#Si toglie dai dataset perché ha solo una modalità e tanti NA
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "smoker")]
+# smoker -> Si toglie dai dataset perché ha solo una modalità
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "smoker")]
 
-# ever_smoker
-table(is.na(se$ever_smoker))
-table(se$ever_smoker)
-
-#Si toglie dai dataset perché ha solo una modalità e tanti NA
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "ever_smoker")]
+# ever_smoker -> Si toglie dai dataset perché ha solo una modalità
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "ever_smoker")]
 
 # fobt -> presenza di sangue occulto nelle feci
-table(is.na(se$fobt))
-table(se$fobt)
-
-#Si toglie dai dataset
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "fobt")]
-
+table(is.na(se_fix2$fobt)) #105 NA
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "fobt")]
 
 # brinkman_index, tant
-table(is.na(se$brinkman_index))
-table(se$brinkman_index)
-
-table(is.na(se$brinkman_index), se$study_name, useNA = "always") #solo in YachidaS_2019
-
-#Per ora si toglie da dataset
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "brinkman_index")]
+table(is.na(se_fix2$brinkman_index)) #105 NA
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "brinkman_index")]
 
 # alcohol_numeric
-table(is.na(se$alcohol_numeric))
-summary(se$alcohol_numeric)
-
-table(is.na(se$alcohol_numeric), se$study_name, useNA = "always") #solo in YachidaS_2019
-
-#Per ora si toglie da dataset
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "alcohol_numeric")]
-
+table(is.na(se_fix2$alcohol_numeric)) #105 NA
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "alcohol_numeric")]
 '-----------------Fine--------------------'
 
 #Tengo il subset costruito con le 317 osservazioni di brinkman_index e droppo le variabili inutili:
 se_fix3 <- se[,!is.na(se$brinkman_index)]
 
+
+'---------------------------Tolgo le variabili una alla volta----------------------------------------'
+# study_name -> non utile per prevedere la risposta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "study_name")]
+
+# subject_id -> non utile per prevedere la risposta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "subject_id")]
+
+# body_site -> non utile per prevedere la risposta (ha solo una modalità)
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "body_site")]
+
+# antibiotics_current_use -> non utile per prevedere la risposta (ha solo una modalità)
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "antibiotics_current_use")]
+
+# study_condition -> variabile risposta
+prop.table(table(se_fix3$study_condition)) #forse è leggermente 
+str(se_fix3$study_condition)
+se_fix3$study_condition <- as.factor(se_fix3$study_condition)
+
+# disease -> possibile variabile risposta, assolutamente non una esplicativa
+table(is.na(se_fix3$disease))
+table(se_fix3$disease)
+str(se_fix3$disease)
+se_fix3$disease <- as.factor(se_fix3$disease)
+
+# age -> è ok così
+
+# age_category -> in relazione deterministica con age va tolta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "age_category")]
+
+# gender
+str(se_fix3$gender)
+se_fix3$gender <- as.factor(se_fix3$gender)
+levels(se_fix3$gender)
+
+# country
+prop.table(table(se_fix3$country)) #ora ha solo una modalità, va tolta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "country")]
+
+# non_westernized -> non utile per prevedere la risposta (ha solo una modalità)
+prop.table(table(se_fix3$non_westernized))
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "non_westernized")]
+
+# sequencing_platform -> non utile per prevedere la risposta (ha solo una modalità)
+prop.table(table(se_fix3$sequencing_platform))
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "sequencing_platform")]
+
+# DNA_extraction_kit (intanto la toglierei)
+table(is.na(se_fix3$DNA_extraction_kit)) #ora ha solo NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "DNA_extraction_kit")]
+
+# PMID (inutile, articolo PUBMED)-> non utile per spiegare la risposta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "PMID")]
+
+# number_reads -> ok così
+
+# number_bases (numero di basi di tutte le reads)
+cor(se_fix3$number_reads, se_fix3$number_bases)
+#Troppo correlato, si toglie bases
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "number_bases")]
+
+
+# minimum_read_length -> ok così
+
+# median_read_length -> ok così
+
+# NCBI_accession -> codice univoco per una sequenza (non informativo per la previsione)
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "NCBI_accession")]
+
+# curator (da togliere) -> non utile per la previsione
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "curator")]
+
+# BMI -> ok così
+table(is.na(se_fix3$BMI)) #nessun NA
+
+# location (da togliere, troppi NA)
+table(is.na(se_fix3$location)) #Tutta NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "location")]
+
+
+# disease_subtype (ha tanti NA, capire perché parlavano di usarla per classificare)
+table(is.na(se_fix3$disease_subtype)) #Ora sono tutti NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "disease_subtype")]
+
+# alcohol
+table(is.na(se_fix3$alcohol)) #tutta NA -> si toglie
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "alcohol")]
+
+# triglycerides, da togliere
+table(is.na(se_fix3$triglycerides)) #SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "triglycerides")]
+
+# hdl, colesterolo buono
+table(is.na(se_fix3$hdl)) #SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "hdl")]
+
+# ldl, colesterolo cattivo,
+table(is.na(se_fix3$ldl)) #SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "ldl")]
+
+# hba1c, emoglobina glicata
+table(is.na(se_fix3$hba1c)) # SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "hba1c")]
+
+# smoker -> Si toglie dai dataset perché ha solo una modalità
+table(is.na(se_fix3$smoker)) #SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "smoker")]
+
+# ever_smoker -> Si toglie dai dataset perché ha solo una modalità
+table(is.na(se_fix3$ever_smoker)) #SOLO NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "ever_smoker")]
+
+# fobt -> presenza di sangue occulto nelle feci
+table(is.na(se_fix3$fobt)) #317 NA
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "fobt")]
+
+# brinkman_index, tant
+table(is.na(se_fix3$brinkman_index)) #ora è ok
+
+# alcohol_numeric
+table(is.na(se_fix3$alcohol_numeric)) #ora è ok
+'-----------------Fine--------------------'
+
 '----------------------------------Esplorativa Assay-------------------------------------------------'
 #assay: relative abundance
 dim(assay(se))
+dim(assay(se_fix2))
+dim(assay(se_fix3))
 #rownames(assay(se))
 
+'------------------se_fix2---------------'
 #togliamo gli zeri
 #se <- se[rowMaxs(assay(se)) != 0,]
-dim(se[rowMaxs(assay(se)) != 0,])
-dim(se[rowMaxs(assay(se)) > 0.1,]) #Questo è il filtro che teniamo
-se_fix <- se_fix[rowMaxs(assay(se)) > 0.1,]
-se_fix_clinical <- se_fix_clinical[rowMaxs(assay(se)) > 0.1,]
+dim(se_fix2[rowMaxs(assay(se_fix2)) != 0,])
+dim(se_fix2[rowMaxs(assay(se_fix2)) > 0.1,]) #Questo è il filtro che teniamo
+se_fix2 <- se_fix2[rowMaxs(assay(se_fix2)) > 0.1,]
 
-cor_fix <- cor(t(assay(se_fix))) - diag(1,502)
+cor_fix <- abs(cor(t(assay(se_fix2))) - diag(1,307))
 row.names(cor_fix) <- NULL
-which(cor_fix == 1, arr.ind = T)
+which(cor_fix > 0.999999999, arr.ind = T) #220 e 217 cor == 1; 256 e 257 corr == 1
 which(cor_fix >= 0.9, arr.ind = T)
 
 col <- colorRampPalette(c("blue", "white", "red"))(200)
 heatmap(cor_fix, col = col, symm = T)
 heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
 
-#Creazione data.frame
-dim(colData(se_fix))
-dim(assay(se_fix))
-data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))
-data_fix_cl <- as.data.frame(cbind(colData(se_fix_clinical), t(assay(se_fix_clinical))))
+'------------------se_fix3---------------'
+#togliamo gli zeri
+#se <- se[rowMaxs(assay(se)) != 0,]
+dim(se_fix3[rowMaxs(assay(se_fix3)) != 0,])
+dim(se_fix3[rowMaxs(assay(se_fix3)) > 0.1,]) #Questo è il filtro che teniamo
+se_fix3 <- se_fix3[rowMaxs(assay(se_fix3)) > 0.1,]
 
-save(data_fix, data_fix_cl, file = "dataset_fix_fixcl.RData")
+cor_fix <- abs(cor(t(assay(se_fix3))) - diag(1,400))
+row.names(cor_fix) <- NULL
+which(cor_fix > 0.999999999, arr.ind = T) #225 e 276 cor == 1; 225 e 399 corr == 1; 276 e 399 cor == 1
+which(cor_fix >= 0.9, arr.ind = T)
+
+col <- colorRampPalette(c("blue", "white", "red"))(200)
+heatmap(cor_fix, col = col, symm = T)
+heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
+
+'---------------------Creazione data.frame--------------------'
+dim(colData(se_fix2))
+dim(assay(se_fix2))
+data_fix2 <- as.data.frame(cbind(colData(se_fix2), t(assay(se_fix2))))
+
+save(data_fix2, se_fix2, file = "dataset_fix2_105.RData")
+
+dim(colData(se_fix3))
+dim(assay(se_fix3))
+data_fix3 <- as.data.frame(cbind(colData(se_fix3), t(assay(se_fix3))))
+
+save(data_fix3, se_fix3, file = "dataset_fix2_317.RData")
