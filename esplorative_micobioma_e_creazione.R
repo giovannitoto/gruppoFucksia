@@ -96,9 +96,9 @@ boxplot(sum_sogg, outline = F)
 
 ##### ACCORPO PER FAMILY su DATI SOTTOINSIEME
 ################### Dati sottinsieme -> accorpo per FAMILY
-load("dataset_fix2_317.RData")
+load("dataset_fix2_105.RData")
 
-microb3 <- as.data.frame(cbind(assay(se_fix3), rowData(se_fix3)))
+microb3 <- as.data.frame(cbind(assay(se_fix2), rowData(se_fix2)))
 str(microb3) # prime 627 colonne sono le percentuali, poi le variabili delle specie
 microb3$Kingdom <- as.factor(microb3$Kingdom)
 microb3$Phylum <- as.factor(microb3$Phylum)
@@ -111,22 +111,22 @@ microb3$Species <- as.factor(microb3$Species)
 table(microb3$Family)
 dim(table(microb3$Family))
 livelli <- levels(microb3$Family)
-sum_sogg <- matrix(NA, nrow = length(livelli), ncol = 317)
+sum_sogg <- matrix(NA, nrow = length(livelli), ncol = 105)
 for(i in 1:length(livelli)){
-  subs <- microb3[microb3$Family == livelli[i], 1:317]
+  subs <- microb3[microb3$Family == livelli[i], 1:105]
   sum_sogg[i,] <- colSums(subs)
 }
 sum_sogg <- as.data.frame(t(sum_sogg))
 colnames(sum_sogg) <- livelli
 str(sum_sogg) # ho 59 specie
 
-str(data_fix3)
-data_fix3_family <- data_fix3[,-c(10:407)]
-dim(data_fix3_family)
-data_fix3_family <- cbind(data_fix3_family, sum_sogg)
-str(data_fix3_family)
+colnames(data_fix2)
+data_fix2_family <- data_fix2[,-c(11:315)]
+dim(data_fix2_family)
+data_fix2_family <- cbind(data_fix2_family, sum_sogg)
+str(data_fix2_family)
 
-save(data_fix3_family, file = "data_fix317_family.RData")
+save(data_fix2_family, file = "data_fix105_family.RData")
 
 ##### ACCORPO PER FAMILY su DATI TOTALI
 ################### Dati totali -> accorpo per FAMILY

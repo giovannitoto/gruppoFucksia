@@ -1,3 +1,27 @@
+rm(list = ls())
+load("data_fix105_family.RData")
+load("dataset_fix2_105.RData")
+
+# Unisco due dataset: li andro' a dividere nuovamente in seguito
+data_fix2 <- cbind(data_fix2, data_fix2_family[,11:56])
+
+# ---------------------------------------------------------------------------- #
+
+# Definisco tabella per il confronto dei modelli
+tab_confronto <- c("DATA", "MODELLO", "TASSO ERRATA CLASSIFICAZIONE")
+
+tab_confronto <- matrix(NA, nrow = 1, ncol = 3)
+colnames(tab_confronto) <- c("dataset", "model", "err")
+tab_confronto <- as.data.frame(tab_confronto)
+
+# ---------------------------------------------------------------------------- #
+
+cv_data <- list(data_fix2[,c(1,2,3,7,8,9,10)], data_fix2[,c(1,4,5,6, 11:315)],
+                data_fix2[,1:315], data_fix2[,c(1,4,5,6, 316:361)],
+                data_fix2[,c(1:10, 316:361)])
+
+cv_data_names <- c("specie - cliniche", "specie - batteri", " specie - cliniche + batteri",
+                    "family - batteri", " family - cliniche + batteri")
 
 
 
@@ -6,14 +30,11 @@
 # K-fold Cross-Validation
 FOLDS <- 5
 
-folds <- sample(cut(seq(1,nrow(data_fix)), breaks=FOLDS, labels=FALSE))
+folds <- sample(cut(seq(1,nrow(data_fix2)), breaks=FOLDS, labels=FALSE))
 
-cv_errors <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+cv_errors <- matrix(NULL, nrow = 1, ncol = FOLDS+3)
 colnames(cv_errors) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
 cv_errors <- as.data.frame(cv_errors)
-
-cv_data <- list(data_fix[,c(1,2,3,4,8)], data_fix[,c(1,5,6,7,9:507)], data_fix)
-cv_data_names <- c("cliniche", "batteri", "cliniche + batteri")
 
 
 for (k in 1:FOLDS) { print(table(cv_data[[1]][which(folds==k, arr.ind=TRUE), 1])) }
@@ -38,6 +59,8 @@ for(j in 1:length(cv_data)) {
                      c(cv_data_names[j], "Modello logistico", mean(err), err))
 }
 
+
+cv_errors
 # ---------------------------------------------------------------------------- #
 
 # PROJECTION PURSUIT REGRESSION (PPR)
@@ -68,7 +91,7 @@ for(j in 1:length(cv_data)) {
 library(tree)
 
 for(j in 1:length(cv_data)) {
-  for (HYP in c(2,5,10,15,20,30,40,50,60,70,80,90,100)) {
+  for (HYP in c(2,3,5,6)) {
     err <- NULL
     # Salto se il numero di variabili e' troppo piccolo
     if (HYP>=NCOL(cv_data[[j]])) { next }
@@ -90,6 +113,12 @@ for(j in 1:length(cv_data)) {
                        c(cv_data_names[j], paste("Albero di Classificazione", HYP), mean(err), err))
   }
 }
+
+cv_errors 
+
+i = 5
+testIndexes <- which(folds==i, arr.ind=TRUE)
+dim(cv_data[[4]][-testIndexes, ])
 
 # ---------------------------------------------------------------------------- #
 
@@ -164,7 +193,7 @@ for(j in 1:length(cv_data)) {
   cv_errors <- rbind(cv_errors,
                      c(cv_data_names[j], "Boosting", mean(err), err))
 }
-
+cv_errors
 # ---------------------------------------------------------------------------- #
 
 # SUPPORT VECTOR MACHINES - RADIALE

@@ -32,8 +32,8 @@ prop.table(table(s$study_condition))
 rm(list=c("sb1","sb0","idx"))
 
 # Standardizzo le variabili
-s[, sapply(s,class)!="factor"] <- scale(s[, sapply(s,class)!="factor"])
-v[, sapply(s,class)!="factor"] <- scale(v[, sapply(s,class)!="factor"])
+# s[, sapply(s,class)!="factor"] <- scale(s[, sapply(s,class)!="factor"])
+# v[, sapply(s,class)!="factor"] <- scale(v[, sapply(s,class)!="factor"])
 
 prop.table(table(s$study_condition))
 prop.table(table(v$study_condition))
@@ -84,8 +84,9 @@ library(glmnet)  # lasso : glmnet con alpha=1
 
 j = 3
 
-x   <- model.matrix(~ ., data=datasets_s[[3]][,-1])
+x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
 x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+x <- 
 fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
                        family="binomial", type.measure="class",
                        alpha=1, nfolds=10)
