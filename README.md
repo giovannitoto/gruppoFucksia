@@ -133,7 +133,7 @@ Consideriamo 6 dataset:
 
 ## Giorno 3 - 21/07/2021
 Decidiamo di applicare i modelli con CV a dataset composti da diversi soggetti:
-- tutte i soggetti, eccetto i 7 con valore nullo in ```BMI```.
+- tutti i soggetti, eccetto i 7 con valore nullo in ```BMI```.
 - soggetti corrispondenti ai 105 valori non nulli della var. ```hdl```, per poter considerare anche ```triglycerides```, ```hdl```, ```ldl```.
 - soggetti appartenenti allo studio *YachidaS_2019*, per poter considerare anche ```brinkman_index```,```alcohol_numeric```.
 
