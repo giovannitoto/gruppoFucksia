@@ -2,27 +2,32 @@
 # - considerando aggregazione a livello di specie
 
 rm(list=ls())
-load("dataset_fix_fixcl.RData")
+load("dataset_fix.RData")
 
-# Tolgo variabili collineari
-data_fix <- data_fix[,-c(419+8, 420+8, 493+8)]
+stima <- data_fix[data_fix$study_name != "FengQ_2015", ]
+verifica <- data_fix[data_fix$study_name == "FengQ_2015", ]
 
 # Bilancio il dataset in modo da avere una proporzione 40%/60%
-data_fix1 <- data_fix[data_fix$study_condition=="adenoma", ]
-data_fix0 <- data_fix[data_fix$study_condition=="control", ]
+stima_fix1 <- stima[stima$study_condition=="adenoma", ]
+stima_fix0 <- stima[stima$study_condition=="control", ]
 # In pratica, scarto oss. dal gruppo piu' numeroso in modo da avere gruppi bilanciati
 # In questo caso sb0 ha troppe oss. => scarto quelle in eccesso
 set.seed(28)
-idx <- sample(1:nrow(data_fix0), trunc(nrow(data_fix1)*0.6/0.4))
-data_fix0 <- data_fix0[idx, ]
+idx <- sample(1:nrow(stima_fix0), trunc(nrow(stima_fix1)*0.6/0.4))
+stima_fix0 <- stima_fix0[idx, ]
 # Sostituisco data_fix con la versione bilanciata
-data_fix <- rbind(data_fix1, data_fix0)  
-rm(list=c("data_fix1","data_fix0","idx"))
+stima <- rbind(stima_fix1, stima_fix0)  
+prop.table(table(stima$study_condition))
+rm(list=c("stima_fix1","stima_fix0","idx"))
 
-prop.table(table(data_fix$study_condition))
-#    adenoma   control 
-#  0.4003868 0.5996132 
+prop.table(table(stima$study_condition))
+# adenoma control 
+# 0.4     0.6 
+prop.table(table(verifica$study_condition))
 
+# elimino study_name
+stima <- stima[, -1]
+verifica <- verifica[, -1]
 # ---------------------------------------------------------------------------- #
 
 # K-fold Cross-Validation

@@ -19,8 +19,6 @@ se_fix <- se
 table(is.na(se$study_name))
 table(se$study_name) # abbiamo 5 studi
 
-#-> non utile per prevedere la risposta
-colData(se_fix) <- colData(se_fix)[,which(colnames(colData(se_fix)) != "study_name")]
 
 # subject_id
 table(is.na(se$subject_id))
@@ -336,6 +334,9 @@ row.names(cor_fix) <- NULL
 which(cor_fix == 1, arr.ind = T)
 which(cor_fix >= 0.9, arr.ind = T)
 
+# tolgo corr == 1
+se_fix <- se_fix[-c(419, 429, 493),]
+
 col <- colorRampPalette(c("blue", "white", "red"))(200)
 heatmap(cor_fix, col = col, symm = T)
 heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
@@ -345,7 +346,7 @@ dim(colData(se_fix))
 dim(assay(se_fix))
 data_fix <- as.data.frame(cbind(colData(se_fix), t(assay(se_fix))))
 
-save(data_fix, file = "dataset_fix_fixcl.RData")
+save(se_fix, data_fix, file = "dataset_fix.RData")
 
 # 1: $ study_condition -> risposta
 # 2-4 8 : cliniche
