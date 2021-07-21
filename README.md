@@ -122,26 +122,27 @@ Prima di applicari i modelli, rimuoviamo le variabili collineari, ovvero le vari
 Visto che fornisce risultati migliori, decidiamo di fare *Convalida Incrociata* (*CV*).
 
 Consideriamo 6 dataset:
-1. data_fix: var. cliniche + var.sui batteri + proporzioni
-2. data_fix[,-c(9:ncol(data_fix))]: var. cliniche + var. sui batteri
-3. data_fix[,c(1,9:ncol(data_fix))]: proporzioni
-4. data_fix_cl: var. cliniche + proporzioni
-5. data_fix_cl[,-c(6:ncol(data_fix_cl))]: var. cliniche
-6. data_fix_cl[,c(1,6:ncol(data_fix_cl))]: proporzioni
-
-
-"data_fix", "data_fix_nobact", "data_fix_bact", "data_cl", "data_cl_nobact", "data_cl_bact"
-
-cv_data <- list(data_fix, )
-
+1. ```data_fix[,-c(9:ncol(data_fix))]```: var. cliniche
+2. ```data_fix[,c(1,9:ncol(data_fix))]```: proporzioni
+3. ```data_fix```: var. cliniche + var.sui batteri + proporzioni
 
 ### Note
-- Osserviamo che le variabili ```triglycerides```, ```hdl```, ```ldl``` hanno valori nulli sui stessi soggetti; inoltre sono disponibili solo nello studio FengQ_2015; potrebbe aver senso considerare solo i soggetti dello studio FengQ_2015?
-- ```brinkman_index``` e ```alcohol_numeric``` è disponibile solo nello studio YachidaS_2019.
-
+- Osserviamo che le variabili ```triglycerides```, ```hdl```, ```ldl``` hanno valori nulli sui stessi soggetti; inoltre sono disponibili solo nello studio FengQ_2015; potrebbe aver senso considerare solo i soggetti dello studio *FengQ_2015*?
+- ```brinkman_index``` e ```alcohol_numeric``` è disponibile solo nello studio *YachidaS_2019*.
 
 
 ## Giorno 3 - 21/07/2021
+Decidiamo di applicare i modelli con CV a dataset composti da diversi soggetti:
+- tutte i soggetti, eccetto i 7 con valore nullo in ```BMI```.
+- soggetti corrispondenti ai 105 valori non nulli della var. ```hdl```, per poter considerare anche ```triglycerides```, ```hdl```, ```ldl```.
+- soggetti appartenenti allo studio *YachidaS_2019*, per poter considerare anche ```brinkman_index```,```alcohol_numeric```.
+
+Per il primo dataset si considerano 3 combinazioni di variabili:
+- variabili cliniche
+- variabili sui batteri e proporzioni
+- sia variabili cliniche sia variabili sui batteri e proporzioni
+
+**Ha senso usare queste combinazioni anche per gli altri due?**
 
 
 ## Giorno 4 - 22/07/2021
