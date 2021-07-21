@@ -7,10 +7,26 @@ load("dataset_fix_fixcl.RData")
 # Tolgo variabili collineari
 data_fix <- data_fix[,-c(419+8, 420+8, 493+8)]
 
+# Bilancio il dataset in modo da avere una proporzione 40%/60%
+data_fix1 <- data_fix[data_fix$study_condition=="adenoma", ]
+data_fix0 <- data_fix[data_fix$study_condition=="control", ]
+# In pratica, scarto oss. dal gruppo piu' numeroso in modo da avere gruppi bilanciati
+# In questo caso sb0 ha troppe oss. => scarto quelle in eccesso
+set.seed(28)
+idx <- sample(1:nrow(data_fix0), trunc(nrow(data_fix1)*0.6/0.4))
+data_fix0 <- data_fix0[idx, ]
+# Sostituisco data_fix con la versione bilanciata
+data_fix <- rbind(data_fix1, data_fix0)  
+rm(list=c("data_fix1","data_fix0","idx"))
+
+prop.table(table(data_fix$study_condition))
+#    adenoma   control 
+#  0.4003868 0.5996132 
+
 # ---------------------------------------------------------------------------- #
 
 # K-fold Cross-Validation
-FOLDS <- 10
+FOLDS <- 5
 
 folds <- sample(cut(seq(1,nrow(data_fix)), breaks=FOLDS, labels=FALSE))
 
@@ -20,6 +36,10 @@ cv_errors <- as.data.frame(cv_errors)
 
 cv_data <- list(data_fix[,c(1,2,3,4,8)], data_fix[,c(1,5,6,7,9:507)], data_fix)
 cv_data_names <- c("cliniche", "batteri", "cliniche + batteri")
+
+
+for (k in 1:FOLDS) { print(table(cv_data[[1]][which(folds==k, arr.ind=TRUE), 1])) }
+
 
 # ---------------------------------------------------------------------------- #
 
@@ -36,7 +56,32 @@ for(j in 1:length(cv_data)) {
     err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
     cat("Data", j, "Fold", i, "\n")
   }
-  cv_errors <- rbind(cv_errors, c(cv_data_names[j], "Modello logistico", mean(err), err))
+  cv_errors <- rbind(cv_errors,
+                     c(cv_data_names[j], "Modello logistico", mean(err), err))
+}
+
+# ---------------------------------------------------------------------------- #
+
+# PROJECTION PURSUIT REGRESSION (PPR)
+
+set.seed(28)
+for(j in 1:length(cv_data)) {
+  for (HYP in c(2,4,6,8,10)) {
+    err <- NULL
+    for(i in 1:FOLDS){
+      testIndexes <- which(folds==i, arr.ind=TRUE)
+      # Stimo il modello
+      fit.model <- ppr(as.numeric(study_condition=="adenoma") ~ .,
+                       data=cv_data[[j]][-testIndexes,-1], nterms=HYP)
+      # Calcolo tasso di errata classificazione
+      pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ]) > 0.5
+      tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+      err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+      cat("Data", j, "Fold", i, "nterms", HYP, "\n")
+    }
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("PPR",HYP), mean(err), err))
+  }
 }
 
 # ---------------------------------------------------------------------------- #
@@ -45,10 +90,10 @@ for(j in 1:length(cv_data)) {
 library(tree)
 
 for(j in 1:length(cv_data)) {
-  err <- NULL
-  for (J in c(2,5,10,15,20,30,40,50,60,70,80,90,100)) {
+  for (HYP in c(2,5,10,15,20,30,40,50,60,70,80,90,100)) {
+    err <- NULL
     # Salto se il numero di variabili e' troppo piccolo
-    if (J>=NCOL(cv_data[[j]])) { next }
+    if (HYP>=NCOL(cv_data[[j]])) { next }
     for(i in 1:FOLDS){
       testIndexes <- which(folds==i, arr.ind=TRUE)
       # Stimo il modello
@@ -56,41 +101,156 @@ for(j in 1:length(cv_data)) {
                         control=tree.control(nobs=nrow(cv_data[[j]][-testIndexes, ]),
                                              minsize=1,
                                              mindev=0))
-      fit.model <- prune.tree(fit.model, best=J)
+      fit.model <- prune.tree(fit.model, best=HYP)
       # Calcolo tasso di errata classificazione
       pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ], type="class")
       tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
-      cat("Data", j, "Fold", i, "J", J, "\n")
+      cat("Data", j, "Fold", i, "J", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors, c(cv_data_names[j], paste("Albero di Classificazione", J), mean(err), err))
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("Albero di Classificazione", HYP), mean(err), err))
   }
 }
 
 # ---------------------------------------------------------------------------- #
 
-# RANDOM FOREST + BAGGING CON OTTIMIZZAZIONE
-library(randomForest)
+# BAGGING
+library(ipred)
 
+set.seed(496)
 for(j in 1:length(cv_data)) {
-  err <- NULL
-  for (MTRY in c(5,10,20,30,40,50,60,70,80,90,100,200,300,400)) {
-    # Se MTRY e' troppo grande, salto il passaggio
-    if (MTRY>=NCOL(cv_data[[j]])) { next }
+  for (HYP in 10*(5:15)) {
+    err <- NULL
     for(i in 1:FOLDS){
       testIndexes <- which(folds==i, arr.ind=TRUE)
-      set.seed(28)
-      rf1 <- randomForest(study_condition ~., data=cv_data[[j]][-testIndexes, ], nodesize=1, 
-                          mtry=3, ntree=500, importance = T)
+      # Stimo il modello
+      fit.model <- bagging(study_condition ~ .,
+                           data=cv_data[[j]][-testIndexes, ], nbagg=HYP)
       # Calcolo tasso di errata classificazione
-      pred <- predict(rf1, newdata=cv_data[[j]][testIndexes, ])
+      pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ])
       tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
-      cat("Data", j, "Fold", i, "mtry", MTRY, "\n")
+      cat("Data", j, "Fold", i, "nbagg", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors, c(cv_data_names[j], paste("RandomForest -",MTRY), mean(err), err))
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("Bagging",HYP), mean(err), err))
   }
 }
 
 # ---------------------------------------------------------------------------- #
 
+# RANDOM FOREST + BAGGING
+library(randomForest)
+
+set.seed(28)
+for(j in 1:length(cv_data)) {
+  for (HYP in c(1,3,5,10,20,30,40,50,75,100,150,200)) {
+    err <- NULL
+    # Se MTRY e' troppo grande, salto il passaggio
+    if (HYP>=NCOL(cv_data[[j]])) { next }
+    for(i in 1:FOLDS){
+      testIndexes <- which(folds==i, arr.ind=TRUE)
+      # Stimo il modello
+      fit.model <- randomForest(study_condition ~., data=cv_data[[j]][-testIndexes, ],
+                                nodesize=1, mtry=HYP, ntree=500, importance = T)
+      # Calcolo tasso di errata classificazione
+      pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ])
+      tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+      err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+      cat("Data", j, "Fold", i, "mtry", HYP, "\n")
+    }
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("RandomForest",HYP), mean(err), err))
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+
+# BOOSTING
+library(ada)
+
+set.seed(496)
+for(j in 1:length(cv_data)) {
+  err <- NULL
+  for(i in 1:FOLDS){
+    testIndexes <- which(folds==i, arr.ind=TRUE)
+    # Stimo il modello
+    fit.model <- ada(study_condition ~ ., data=cv_data[[j]][-testIndexes, ], iter=100)
+    # Calcolo tasso di errata classificazione
+    pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ])
+    tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+    err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+    cat("Data", j, "Fold", i, "\n")
+  }
+  cv_errors <- rbind(cv_errors,
+                     c(cv_data_names[j], "Boosting", mean(err), err))
+}
+
+# ---------------------------------------------------------------------------- #
+
+# SUPPORT VECTOR MACHINES - RADIALE
+library(e1071)
+KERNEL <- "radial"
+
+set.seed(28)
+for(j in 1:length(cv_data)) {
+  for (HYP in c(1,2,3,4,5,6)) {
+    err <- NULL
+    # Se MTRY e' troppo grande, salto il passaggio
+    for(i in 1:FOLDS){
+      testIndexes <- which(folds==i, arr.ind=TRUE)
+      # Stimo il modello
+      fit.model <- svm(study_condition ~ ., data=cv_data[[j]][-testIndexes, ],
+                       cost=HYP, kernel=KERNEL)
+      # Calcolo tasso di errata classificazione
+      pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ], decision.values=TRUE)
+      tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+      err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+      cat("Data", j, "Fold", i, "mtry", HYP, "\n")
+    }
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("SVM",KERNEL,HYP), mean(err), err))
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+
+# SUPPORT VECTOR MACHINES - SIGMOIDE
+library(e1071)
+KERNEL <- "sigmoid"
+
+set.seed(28)
+for(j in 1:length(cv_data)) {
+  for (HYP in c(1,2,3,4,5,6)) {
+    err <- NULL
+    # Se MTRY e' troppo grande, salto il passaggio
+    for(i in 1:FOLDS){
+      testIndexes <- which(folds==i, arr.ind=TRUE)
+      # Stimo il modello
+      fit.model <- svm(study_condition ~ ., data=cv_data[[j]][-testIndexes, ],
+                       cost=HYP, kernel=KERNEL)
+      # Calcolo tasso di errata classificazione
+      pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ], decision.values=TRUE)
+      tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+      err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+      cat("Data", j, "Fold", i, "mtry", HYP, "\n")
+    }
+    cv_errors <- rbind(cv_errors,
+                       c(cv_data_names[j], paste("SVM",KERNEL,HYP), mean(err), err))
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
