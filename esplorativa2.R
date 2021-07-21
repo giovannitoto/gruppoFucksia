@@ -276,9 +276,8 @@ se_fix2$study_condition <- as.factor(se_fix2$study_condition)
 
 # disease -> possibile variabile risposta, assolutamente non una esplicativa
 table(is.na(se_fix2$disease))
-table(se_fix2$disease)
-str(se_fix2$disease)
-se_fix2$disease <- as.factor(se_fix2$disease)
+table(se_fix2$disease) #troppe modalità e poche numerosità, la tolgo
+colData(se_fix2) <- colData(se_fix2)[,which(colnames(colData(se_fix2)) != "disease")]
 
 # age -> è ok così
 
@@ -408,6 +407,8 @@ table(is.na(se_fix3$disease))
 table(se_fix3$disease)
 str(se_fix3$disease)
 se_fix3$disease <- as.factor(se_fix3$disease)
+#La modalità few_polyps è sottocampionata, la tolgo e basta
+colData(se_fix3) <- colData(se_fix3)[,which(colnames(colData(se_fix3)) != "disease")]
 
 # age -> è ok così
 
@@ -526,6 +527,9 @@ row.names(cor_fix) <- NULL
 which(cor_fix > 0.999999999, arr.ind = T) #220 e 217 cor == 1; 256 e 257 corr == 1
 which(cor_fix >= 0.9, arr.ind = T)
 
+#Tolgo le variabili con correlazione 1
+se_fix2 <- se_fix2[-c(220,257),]
+
 col <- colorRampPalette(c("blue", "white", "red"))(200)
 heatmap(cor_fix, col = col, symm = T)
 heatmap(cor_fix, col = col, symm = T, Colv = NA, Rowv = NA)
@@ -541,6 +545,9 @@ cor_fix <- abs(cor(t(assay(se_fix3))) - diag(1,400))
 row.names(cor_fix) <- NULL
 which(cor_fix > 0.999999999, arr.ind = T) #225 e 276 cor == 1; 225 e 399 corr == 1; 276 e 399 cor == 1
 which(cor_fix >= 0.9, arr.ind = T)
+
+#Tolgo le variabili con correlazione 1
+se_fix3 <- se_fix3[-c(276,399),]
 
 col <- colorRampPalette(c("blue", "white", "red"))(200)
 heatmap(cor_fix, col = col, symm = T)
