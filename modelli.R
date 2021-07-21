@@ -23,17 +23,13 @@ sb1 <- s[s$study_condition=="adenoma", ]
 sb0 <- s[s$study_condition=="control", ]
 # In pratica, scarto oss. dal gruppo piu' numeroso in modo da avere gruppi bilanciati
 # In questo caso sb0 ha troppe oss. => scarto quelle in eccesso
-set.seed(28)
+set.seed(496)
 idx <- sample(1:nrow(sb0), trunc(nrow(sb1)*0.6/0.4))
 sb0 <- sb0[idx, ]
 # Sostituisco data_fix con la versione bilanciata
 s <- rbind(sb1, sb0)  
 prop.table(table(s$study_condition))
 rm(list=c("sb1","sb0","idx"))
-
-# Standardizzo le variabili
-# s[, sapply(s,class)!="factor"] <- scale(s[, sapply(s,class)!="factor"])
-# v[, sapply(s,class)!="factor"] <- scale(v[, sapply(s,class)!="factor"])
 
 prop.table(table(s$study_condition))
 prop.table(table(v$study_condition))
@@ -54,10 +50,10 @@ tab_confronto <- as.data.frame(tab_confronto)
 
 # ---------------------------------------------------------------------------- #
 
-datasets_s <- list(s[,c(1,2,3,7)], s[,c(1,4,5,6, 8:506)], s[1:506],
-                   s[,c(1,4,5,6, 507:571)], s[1:7, 506:571])
-datasets_v <- list(v[,c(1,2,3,7)], v[,c(1,4,5,6, 8:506)], v[1:506],
-                   v[,c(1,4,5,6, 507:571)], v[1:7, 506:571])
+datasets_s <- list(s[,c(1,2,3,7)], s[,c(1,4,5,6, 8:506)], s[,1:506],
+                   s[,c(1,4,5,6, 507:571)], s[, c(1:7, 506:571)])
+datasets_v <- list(v[,c(1,2,3,7)], v[,c(1,4,5,6, 8:506)], v[,1:506],
+                   v[,c(1,4,5,6, 507:571)], v[,c(1:7, 506:571)])
 datasets_names <- c("specie - cliniche", "specie - batteri", " specie - cliniche + batteri",
                     "family - batteri", " family - cliniche + batteri")
 
@@ -80,26 +76,118 @@ tab_confronto <- tab_confronto[-1,]
 
 # ---------------------------------------------------------------------------- #
 
-library(glmnet)  # lasso : glmnet con alpha=1
+# LASSO (alpha=1)
+library(glmnet)
 
-j = 3
+for (j in 1:length(datasets_names)) {
+  x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
+  #x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+  x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+  #x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
+  
+  fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
+                         family="binomial", type.measure="class",
+                         alpha=1, nfolds=10)
+  # Effettuo previsioni
+  y.model <- predict(fit.model, newx=x.v, type="response")
+  et.model <- table(y.model>0.5, datasets_v[[j]]$study_condition)
+  e.model <- 1 - sum(diag(et.model))/sum(et.model)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]],"Lasso", e.model))
+  cat("Data", j, "\n")
+}
 
-x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
-x <- 
-fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
-                       family="binomial", type.measure="class",
-                       alpha=1, nfolds=10)
-y.model <- predict(fit.model, newx=x.v, type="response")
-et.model <- table(y.model>0.5, datasets_v[[j]]$study_condition)
-e.model <- 1 - sum(diag(et.model))/sum(et.model)
-tab_confronto <- rbind(tab_confronto,
-                       c(datasets_names[[j]],"Lasso", e.model))
-cat("Data", j, "\n")
+# ---------------------------------------------------------------------------- #
+
+# ELASTIC NET
+library(glmnet)
+
+for (HYP in c(0,0.25,0.5,0.75)) {
+  for (j in 1:length(datasets_names)) {
+    x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
+    #x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+    x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+    #x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
+    
+    fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
+                           family="binomial", type.measure="class",
+                           alpha=HYP, nfolds=10)
+    # Effettuo previsioni
+    y.model <- predict(fit.model, newx=x.v, type="response")
+    et.model <- table(y.model>0.5, datasets_v[[j]]$study_condition)
+    e.model <- 1 - sum(diag(et.model))/sum(et.model)
+    tab_confronto <- rbind(tab_confronto,
+                           c(datasets_names[[j]],paste("ElasticNet",HYP), e.model))
+    cat("Data", j, "alpha", HYP, "\n")
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+
+# RANDOM FOREST (CV)
+library(randomForest)
+library(e1071)
+
+set.seed(496)
+for (j in 1:length(datasets_names)) {
+  MTRY_RANGE <- 2*(1:20)[2*(1:20)<NCOL(datasets_s[[j]])]
+  forest.tune <- tune(randomForest, study_condition ~ ., data=datasets_s[[j]],
+                      ranges=list(mtry=MTRY_RANGE),
+                      tunecontrol=tune.control(cross=5),
+                      ntree=100)
+  best.mtry <- min(forest.tune$best.parameters, NCOL(datasets_s[[j]]))
+  fit.model <- randomForest(study_condition ~ ., data=datasets_s[[j]], mtry=best.mtry)
+  # Effettuo previsioni
+  y.model <- predict(fit.model, newdata=datasets_v[[j]])
+  et.model <- table(y.model, datasets_v[[j]]$study_condition)
+  e.model <- 1 - sum(diag(et.model))/sum(et.model)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]],paste("Random Forest - mtry", best.mtry), e.model))
+  cat("Data", j, "\n")
+  rm(list=c("forest.tune","fit.model","y.model"))
+}
 
 
+# ---------------------------------------------------------------------------- #
 
+### SUPPORT VECTOR MACHINES (SVM)
+library(e1071)
 
+set.seed(496)
+
+for (KERNEL in c("sigmoid", "radial")) {
+  for (j in 1:length(datasets_names)) {
+    fit.svm.cv <- tune(svm, study_condition ~ ., data=datasets_s[[j]],
+                       ranges=list(cost=2^(-2:2)),
+                       tunecontrol=tune.control(cross=5),
+                       kernel=KERNEL)
+    best.cost <- fit.svm.cv$best.parameters
+    fit.model <- svm(study_condition ~ ., data=datasets_s[[j]],
+                     cost=best.cost, probability=T)
+    y.model <- predict(fit.model, newdata=v, decision.values=T)
+    et.model <- table(y.model, osserv=datasets_v[[j]]$study_condition)
+    e.model <- 1 - sum(diag(et.model))/sum(et.model)
+    tab_confronto <- rbind(tab_confronto,
+                           c(datasets_names[[j]], paste("SVM",KERNEL,"- cost",best.cost), e.model))
+    cat("Data", j, "kernel", KERNEL, "\n")
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+
+### BOOSTING
+library(ada)
+
+for (j in 1:length(datasets_names)) {
+  fit.model <- ada(study_condition ~ ., data=datasets_s[[j]], iter=150)
+  # Previsione
+  y.model <- predict(fit.model, newdata=datasets_v[[j]])
+  et.model <- table(y.model, datasets_v[[j]]$study_condition)
+  e.model <- 1 - sum(diag(et.model))/sum(et.model)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]], paste("Boosting"), e.model))
+  cat("Data", j, "/n")
+}
 
 
 
