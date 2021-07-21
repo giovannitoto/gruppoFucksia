@@ -134,8 +134,8 @@ Consideriamo 6 dataset:
 ## Giorno 3 - 21/07/2021
 Decidiamo di applicare i modelli con CV a dataset composti da diversi soggetti:
 - tutti i soggetti, eccetto i 7 con valore nullo in ```BMI```.
-- soggetti corrispondenti ai 105 valori non nulli della var. ```hdl```, per poter considerare anche ```triglycerides```, ```hdl```, ```ldl```.
-- soggetti appartenenti allo studio *YachidaS_2019*, per poter considerare anche ```brinkman_index```,```alcohol_numeric```.
+- soggetti appartenenti allo studio *FengQ_2015*, per poter considerare anche le variabili ```triglycerides```, ```hdl```, ```ldl```; più nello specifico si considerano 105 soggetti su 108 poiché i 3 esclusi presentano valori nulli.
+- soggetti appartenenti allo studio *YachidaS_2019*, per poter considerare anche le variabili ```brinkman_index```,```alcohol_numeric```; più nello specifico si considerano 317 soggetti su 318 poiché l'escluso presenta valori nulli.
 
 Per il primo dataset si considerano 3 combinazioni di variabili:
 - variabili cliniche
@@ -143,6 +143,9 @@ Per il primo dataset si considerano 3 combinazioni di variabili:
 - sia variabili cliniche sia variabili sui batteri e proporzioni
 
 **Ha senso usare queste combinazioni anche per gli altri due?**
+
+
+
 
 
 ## Giorno 4 - 22/07/2021
