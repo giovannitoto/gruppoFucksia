@@ -295,13 +295,103 @@ cv_err_svm[101:200,]
 
 #Controllo errori
 
+#GLM
 cv_err_glm[,1:3] #fa tutto schifo
-cv_err_ppr[,1:3] #con HYP 2 mean_err = 0.457142857142857 -> solo cliniche (da errore con il resto)
-cv_err_cart[,1:3]
-cv_err_bagging[,1:3]
-cv_err_rf[,1:3]
-cv_err_boosting[,1:3]
-cv_err_svm[,1:3]
+
+#PPR
+cv_err_ppr[,1:3] #con HYP 2 mean_err = 0.523809523809524 -> solo cliniche (da errore con il resto)
+
+#CART
+
+#cliniche
+cv_err_cart[cv_err_cart$dataset == "cliniche",][which.min(cv_err_cart
+                      [cv_err_cart$dataset == "cliniche","mean_err"]),1:3] #0.3619
+#specie - batteri
+cv_err_cart[cv_err_cart$dataset == "specie - batteri",][which.min(cv_err_cart
+                      [cv_err_cart$dataset == "specie - batteri","mean_err"]),1:3] #0.3905
+#specie - cliniche + batteri
+cv_err_cart[cv_err_cart$dataset == " specie - cliniche + batteri",][which.min(cv_err_cart
+                      [cv_err_cart$dataset == " specie - cliniche + batteri","mean_err"]),1:3] #0.3905
+#family - batteri
+cv_err_cart[cv_err_cart$dataset == "family - batteri",][which.min(cv_err_cart
+                      [cv_err_cart$dataset == "family - batteri","mean_err"]),1:3] #0.4095
+# family - cliniche + batteri
+cv_err_cart[cv_err_cart$dataset == " family - cliniche + batteri",][which.min(cv_err_cart
+                      [cv_err_cart$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.4381
+
+#BAGGING
+
+#cliniche
+cv_err_bagging[cv_err_bagging$dataset == "cliniche",][which.min(cv_err_bagging
+                      [cv_err_bagging$dataset == "cliniche","mean_err"]),1:3] #0.2190
+#specie - batteri
+cv_err_bagging[cv_err_bagging$dataset == "specie - batteri",][which.min(cv_err_bagging
+                      [cv_err_bagging$dataset == "specie - batteri","mean_err"]),1:3] #0.3810
+#specie - cliniche + batteri
+cv_err_bagging[cv_err_bagging$dataset == " specie - cliniche + batteri",][which.min(cv_err_bagging
+                      [cv_err_bagging$dataset == " specie - cliniche + batteri","mean_err"]),1:3] #0.3333
+#family - batteri
+cv_err_bagging[cv_err_bagging$dataset == "family - batteri",][which.min(cv_err_bagging
+                      [cv_err_bagging$dataset == "family - batteri","mean_err"]),1:3] #0.3429
+# family - cliniche + batteri
+cv_err_bagging[cv_err_bagging$dataset == " family - cliniche + batteri",][which.min(cv_err_bagging
+                      [cv_err_bagging$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.3333
+
+#RANDOM FOREST
+
+#cliniche
+cv_err_rf[cv_err_rf$dataset == "cliniche",][which.min(cv_err_rf
+                      [cv_err_rf$dataset == "cliniche","mean_err"]),1:3] #0.2571
+#specie - batteri
+cv_err_rf[cv_err_rf$dataset == "specie - batteri",][which.min(cv_err_rf
+                      [cv_err_rf$dataset == "specie - batteri","mean_err"]),1:3] #0.3524
+#specie - cliniche + batteri
+cv_err_rf[cv_err_rf$dataset == " specie - cliniche + batteri",][which.min(cv_err_rf
+                      [cv_err_rf$dataset == " specie - cliniche + batteri","mean_err"]),1:3] #0.3238
+#family - batteri
+cv_err_rf[cv_err_rf$dataset == "family - batteri",][which.min(cv_err_rf
+                      [cv_err_rf$dataset == "family - batteri","mean_err"]),1:3] #0.3810
+# family - cliniche + batteri
+cv_err_rf[cv_err_rf$dataset == " family - cliniche + batteri",][which.min(cv_err_rf
+                      [cv_err_rf$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.3714
+
+#BOOSTING
+
+#cliniche
+cv_err_boosting[cv_err_boosting$dataset == "cliniche",][which.min(cv_err_boosting
+                      [cv_err_boosting$dataset == "cliniche","mean_err"]),1:3] #0.2667
+#specie - batteri
+cv_err_boosting[cv_err_boosting$dataset == "specie - batteri",][which.min(cv_err_boosting
+                      [cv_err_boosting$dataset == "specie - batteri","mean_err"]),1:3] #0.4190
+#specie - cliniche + batteri
+cv_err_boosting[cv_err_boosting$dataset == " specie - cliniche + batteri",][which.min(cv_err_boosting
+                      [cv_err_boosting$dataset == " specie - cliniche + batteri","mean_err"]),1:3] #0.4095
+#family - batteri
+cv_err_boosting[cv_err_boosting$dataset == "family - batteri",][which.min(cv_err_boosting
+                      [cv_err_boosting$dataset == "family - batteri","mean_err"]),1:3] #0.4
+# family - cliniche + batteri
+cv_err_boosting[cv_err_boosting$dataset == " family - cliniche + batteri",][which.min(cv_err_boosting
+                      [cv_err_boosting$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.3714
+#SVM
+
+#cliniche
+cv_err_svm[cv_err_svm$dataset == "cliniche",][which.min(cv_err_svm
+                      [cv_err_svm$dataset == "cliniche","mean_err"]),1:3] #0.3524
+#specie - batteri
+cv_err_svm[cv_err_svm$dataset == "specie - batteri",][which.min(cv_err_svm
+                      [cv_err_svm$dataset == "specie - batteri","mean_err"]),1:3] #0.4476
+#specie - cliniche + batteri
+cv_err_svm[cv_err_svm$dataset == " specie - cliniche + batteri",][which.min(cv_err_svm
+                      [cv_err_svm$dataset == " specie - cliniche + batteri","mean_err"]),1:3] #0.4476
+#family - batteri
+cv_err_svm[cv_err_svm$dataset == "family - batteri",][which.min(cv_err_svm
+                      [cv_err_svm$dataset == "family - batteri","mean_err"]),1:3] #0.4476
+# family - cliniche + batteri
+cv_err_svm[cv_err_svm$dataset == " family - cliniche + batteri",][which.min(cv_err_svm
+                      [cv_err_svm$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.4476
+
+
+# ---------------------------------------------------------------------------- #
 
 #Salvo risultati inrermedi
 
