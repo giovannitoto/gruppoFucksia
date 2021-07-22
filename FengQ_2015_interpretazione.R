@@ -35,10 +35,49 @@ cv_data_names <- c("cliniche", "specie - batteri", " specie - cliniche + batteri
 
 # ---------------------------------------------------------------------------- #
 
+source("lift-roc-tab.R")
 
+# ---------------------------------------------------------------------------- #
 
+### ALBERO DI CLASSIFICAZIONE
+library(tree)
 
+# Voglio dividere finche' non avro' due punti per foglia: mi servono opzioni di controllo
+# In particolare:
+# -    nobs : numero di oss. del dataset
+# - minsize : numero massimo di oss. per ogni foglia
+# -  mindev : la devianza minima affinche' ci sia un ulteriore suddivisione
+fit.tree <- tree(study_condition ~ ., data=cv_data[[1]], split="deviance",
+                 control=tree.control(nobs=nrow(cv_data[[1]]),
+                                      minsize=1,
+                                      mindev=0))
+# Stimo modello finale
+final.tree <- prune.tree(fit.tree, best=8)
 
+# Rappresentazione grafica
+plot(final.tree, type="uniform")
+text(final.tree, pretty=1, cex=0.75, label="yprob")
 
+# ---------------------------------------------------------------------------- #
 
+# RANDOM FOREST
+library(randomForest)
 
+# Parametri:
+# - nodesize specifica quanto fare crescere ciascun albero
+# - mtry specifica il numero di variabili per nodo
+# - xtest specifica le covariate di un insieme di verifica
+# - ytest specifica la risposta di un insieme di verifica
+
+set.seed(28)
+fit.forest <- randomForest(study_condition ~ ., data=cv_data[[1]], nodesize=1, mtry=3)
+# Grafico degli errori ottenuti con la tecnica out-of-bag
+# -  nero : errore complessivo
+# - rosso : errore su quelli che non se ne vanno
+# - verde : errore su quelli che se ne vanno
+plot(fit.forest, main="OOB")
+
+# Grafico per importanza delle var. nella random forest
+varImpPlot(fit.forest)
+
+# ---------------------------------------------------------------------------- #
