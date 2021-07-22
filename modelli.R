@@ -158,115 +158,6 @@ for (HYP in c(0,0.2,0.4,0.6,0.8)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Group lasso
-library(gglasso)
-
-# Si può fare solo con il dataset quello con tutto a livello di specie
-# Per raggrupppare le covariate posso mettere tutte quelle cliniche assieme (in caso le droppa),
-# poi mettere magari assiemem quelle delle reads
-# e poi per le specie devo scegliere un livello della tassonomia
-
-j = 3
-
-y <- ifelse(datasets_s[[j]]$study_condition == "adenoma", 1, 0)
-
-x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
-                                       function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
-x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
-x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
-                                         function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
-
-colnames(x)[1:20]
-
-dim(rowData(se_fix))
-colnames(rowData(se_fix))
-rowData(se_fix)$Family
-
-dim(x)
-colnames(x)
-
-family <- c(1,1,1,2,2,2,1,rowData(se_fix)$Family) # e poi gli indici delle famigile
-
-##Cross Validation
-#
-# PENSO CHE BISOGNA STANDARDIZZARE
-set.seed(55)
-fit.cv = cv.gglasso(x=x, y=y,
-                    loss="ls", pred.loss = "misclass",
-                    group=family, nfolds=5)
-plot(fit.cv)
-#
-#lambda.min is at the border
-#
-set.seed(55)
-fit.cv=cv.gglasso(x=X,y=Y,group=grp,nfolds=10, lambda.factor=0.0004)
-plot(fit.cv)
-
-#Pick the best Lambda
-lmbda=fit.cv$lambda.1se
-lmbda1 <- fit.cv$lambda.min
-plot(fit)
-abline(v=log(lmbda), lty=2, col=2)
-abline(v=log(lmbda1), lty=2, col=2)
-
-coefs=coef(object=fit,s=lmbda)
-coefs1=coef(object=fit,s=lmbda1)
-cbind(coefs,coefs1)
-
-
-
-#At best lambda get coefficients and fitted values
-plt=cbind(Y,predict(object=fit, newx=X, s=lmbda),predict(object=fit, newx=X, s=lmbda1)) #,type='link'))
-matplot(plt,main="Predicted vs Actual", type='l',lwd=2,
-        ylab="Unemplyoment %",
-        xlab="Time", xlim=c(1,65))
-grid()
-legend(x=40,y=5,legend=c("Actual","Fitted-1se","Fitted-min", "Predicted"), fill=1:4,bty="n",cex=0.7)
-#
-#
-#Get forward looking projections
-X.p=as.matrix(proj[,-c(1,4)]) #Remove Dates and Unemployment from the model matrix 
-plt=cbind(proj$Unemployment.Rate, predict(object=fit,
-                                          newx=X.p, s=lmbda), predict(object=fit,
-                                                                      newx=X.p, s=lmbda1)) #,type='link'))
-matplot(51:63,plt,main="Predicted vs Fed Projections",type='l',lwd=2,
-        ylab="Unemplyoment %",
-        xlab="Time", add=T, col=4)
-#
-#
-#-----there is a discontinuity between fitted and projected
-#
-#-----connection with the previous prediction
-#At best lambda get coefficients and fitted values
-plt=cbind(Y,predict(object=fit, newx=X, s=lmbda),predict(object=fit, newx=X, s=lmbda1)) #,type='link'))
-matplot(plt,main="Predicted vs Actual", type='l',lwd=2,
-        ylab="Unemplyoment %",
-        xlab="Time", xlim=c(1,65))
-grid()
-legend(x=40,y=5,legend=c("Actual","Fitted-1se","Fitted-min", "Predicted"), fill=1:4,bty="n",cex=0.7)
-#
-#
-#
-#
-#Get forward looking projections
-X.p1<- rbind(X[nrow(X),],X.p)        
-plt=cbind(c(Y[length(Y)],proj$Unemployment.Rate), predict(object=fit,
-                                                          newx=X.p1, s=lmbda), predict(object=fit,
-                                                                                       newx=X.p1, s=lmbda1)) #,type='link'))
-matplot(50:63,plt,main="Predicted vs Fed Projections",type='l',lwd=2,
-        ylab="Unemplyoment %",
-        xlab="Time", add=T, col=4)
-#        
-#   
-#the model has all the groups and hence all the variables 
-#are in the regression equation. 
-############
-rm(list=ls())
-#------------------
-#------------------
-
-# ---------------------------------------------------------------------------- #
 
 # RANDOM FOREST (CV)
 library(randomForest)
@@ -408,5 +299,48 @@ for (j in 1:length(datasets_names)) {
 
 # ---------------------------------------------------------------------------- #
 
+# Group lasso
+library(gglasso)
 
+# Si può fare solo con il dataset quello con tutto a livello di specie
+# Per raggrupppare le covariate posso mettere tutte quelle cliniche assieme (in caso le droppa),
+# poi mettere magari assiemem quelle delle reads
+# e poi per le specie devo scegliere un livello della tassonomia
 
+j = 5
+
+y <- as.numeric(datasets_s[[j]]$study_condition=="adenoma")
+y[y==0] <- -1
+
+x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
+x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
+                                       function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
+x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
+                                         function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
+
+# Tassonomia: "Kingdom" "Phylum"  "Class"   "Order"   "Family"  "Genus"   "Species"
+# Definisco gruppi di variabili
+family <- c(1,2,3,4,5,6,7,as.numeric(as.factor(rowData(se_fix)$Order))+7)
+family_sort <- sort(family, index.return = T)
+idx <- family_sort$ix
+family <- family_sort$x
+# Stimo il modello con CV
+set.seed(28)
+fit.cv <- cv.gglasso(x=x[,idx], y=y, loss="logit", pred.loss="loss",
+                     group=family, nfolds=5)
+# Selezioniamo migliori parametri
+lambda.1se <- fit.cv$lambda.1se; lambda.min <- fit.cv$lambda.min
+# Previsioni
+y.gglasso1 <- as.factor(predict(fit.cv, newx=x.v[,idx], s=lambda.1se)==1)
+y.gglasso2 <- as.factor(predict(fit.cv, newx=x.v[,idx], s=lambda.min)==1)
+
+et.gglasso1 <- table(y.gglasso1, datasets_v[[j]]$study_condition)
+et.gglasso2 <- table(y.gglasso2, datasets_v[[j]]$study_condition)
+
+e.gglasso1 <- 1 - sum(diag(et.gglasso1))/sum(et.gglasso1)
+e.gglasso2 <- 1 - sum(diag(et.gglasso2))/sum(et.gglasso2)
+
+c(e.gglasso1, e.gglasso2)
+
+# ---------------------------------------------------------------------------- #
