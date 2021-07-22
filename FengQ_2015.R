@@ -16,14 +16,23 @@ tab_confronto <- as.data.frame(tab_confronto)
 
 # ---------------------------------------------------------------------------- #
 
+#Guardo i colnames di data_fix2
+colnames(data_fix2)
+colnames(data_fix2)[320] <- "Bacillales_unclassified"
+colnames(data_fix2)[326] <- "Clostridiales_unclassified"
+colnames(data_fix2)[335] <- "Eukaryota_unclassified"
+colnames(data_fix2)[336] <- "Firmicutes_unclassified"
+colnames(data_fix2)[351] <- "Proteobacteria_unclassified"
+colnames(data_fix2)
+
+# ---------------------------------------------------------------------------- #
+
 cv_data <- list(data_fix2[,c(1,2,3,7,8,9,10)], data_fix2[,c(1,4,5,6, 11:315)],
                 data_fix2[,1:315], data_fix2[,c(1,4,5,6, 316:361)],
                 data_fix2[,c(1:10, 316:361)])
 
-cv_data_names <- c("specie - cliniche", "specie - batteri", " specie - cliniche + batteri",
+cv_data_names <- c("cliniche", "specie - batteri", " specie - cliniche + batteri",
                     "family - batteri", " family - cliniche + batteri")
-
-
 
 # ---------------------------------------------------------------------------- #
 
@@ -32,10 +41,37 @@ FOLDS <- 5
 
 folds <- sample(cut(seq(1,nrow(data_fix2)), breaks=FOLDS, labels=FALSE))
 
-cv_errors <- matrix(NULL, nrow = 1, ncol = FOLDS+3)
+'cv_errors <- matrix(NA, nrow = 1, ncol = FOLDS+3)
 colnames(cv_errors) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
-cv_errors <- as.data.frame(cv_errors)
+cv_errors <- as.data.frame(cv_errors)'
 
+cv_err_glm <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_glm) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_glm <- as.data.frame(cv_err_glm)
+
+cv_err_ppr <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_ppr) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_ppr <- as.data.frame(cv_err_ppr)
+
+cv_err_cart <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_cart) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_cart <- as.data.frame(cv_err_cart)
+
+cv_err_bagging <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_bagging) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_bagging <- as.data.frame(cv_err_bagging)
+
+cv_err_rf <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_rf) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_rf <- as.data.frame(cv_err_rf)
+
+cv_err_boosting <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_boosting) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_boosting <- as.data.frame(cv_err_boosting)
+
+cv_err_svm <- matrix(NA, nrow = 1, ncol = FOLDS+3)
+colnames(cv_err_svm) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_svm <- as.data.frame(cv_err_svm)
 
 for (k in 1:FOLDS) { print(table(cv_data[[1]][which(folds==k, arr.ind=TRUE), 1])) }
 
@@ -55,12 +91,12 @@ for(j in 1:length(cv_data)) {
     err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
     cat("Data", j, "Fold", i, "\n")
   }
-  cv_errors <- rbind(cv_errors,
+  cv_err_glm <- rbind(cv_err_glm,
                      c(cv_data_names[j], "Modello logistico", mean(err), err))
 }
 
-
-cv_errors
+cv_err_glm <- cv_err_glm[-1,]
+cv_err_glm
 # ---------------------------------------------------------------------------- #
 
 # PROJECTION PURSUIT REGRESSION (PPR)
@@ -72,7 +108,7 @@ for(j in 1:length(cv_data)) {
     for(i in 1:FOLDS){
       testIndexes <- which(folds==i, arr.ind=TRUE)
       # Stimo il modello
-      fit.model <- ppr(as.numeric(study_condition=="adenoma") ~ .,
+      fit.model <- ppr(as.numeric(cv_data[[j]][-testIndexes, 1] == "adenoma") ~ .,
                        data=cv_data[[j]][-testIndexes,-1], nterms=HYP)
       # Calcolo tasso di errata classificazione
       pred <- predict(fit.model, newdata=cv_data[[j]][testIndexes, ]) > 0.5
@@ -80,21 +116,22 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "nterms", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_ppr <- rbind(cv_err_ppr,
                        c(cv_data_names[j], paste("PPR",HYP), mean(err), err))
   }
-}
-
+} #non va oltre il primo dataset (quello clinico)
+cv_err_ppr <- cv_err_ppr[-1,]
+cv_err_ppr
 # ---------------------------------------------------------------------------- #
 
 # ALBERO DI CLASSIFICAZIONE
 library(tree)
 
 for(j in 1:length(cv_data)) {
-  for (HYP in c(2,3,5,6)) {
+  for (HYP in c(2,3,5,6,7,8,9,10,20,30,40,50,70,90,100)) {
     err <- NULL
     # Salto se il numero di variabili e' troppo piccolo
-    if (HYP>=NCOL(cv_data[[j]])) { next }
+    #if (HYP>=NCOL(cv_data[[j]])) { next }
     for(i in 1:FOLDS){
       testIndexes <- which(folds==i, arr.ind=TRUE)
       # Stimo il modello
@@ -109,16 +146,16 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "J", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_cart <- rbind(cv_err_cart,
                        c(cv_data_names[j], paste("Albero di Classificazione", HYP), mean(err), err))
   }
 }
+cv_err_cart <- cv_err_cart[-1,]
+cv_err_cart
 
-cv_errors 
-
-i = 5
+'i = 5
 testIndexes <- which(folds==i, arr.ind=TRUE)
-dim(cv_data[[4]][-testIndexes, ])
+dim(cv_data[[4]][-testIndexes, ])'
 
 # ---------------------------------------------------------------------------- #
 
@@ -140,11 +177,12 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "nbagg", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_bagging <- rbind(cv_err_bagging,
                        c(cv_data_names[j], paste("Bagging",HYP), mean(err), err))
   }
 }
-
+cv_err_bagging <- cv_err_bagging[-1,]
+cv_err_bagging
 # ---------------------------------------------------------------------------- #
 
 # RANDOM FOREST + BAGGING
@@ -167,10 +205,12 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "mtry", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_rf <- rbind(cv_err_rf,
                        c(cv_data_names[j], paste("RandomForest",HYP), mean(err), err))
   }
 }
+cv_err_rf <- cv_err_rf[-1,]
+cv_err_rf
 
 # ---------------------------------------------------------------------------- #
 
@@ -190,10 +230,12 @@ for(j in 1:length(cv_data)) {
     err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
     cat("Data", j, "Fold", i, "\n")
   }
-  cv_errors <- rbind(cv_errors,
+  cv_err_boosting <- rbind(cv_err_boosting,
                      c(cv_data_names[j], "Boosting", mean(err), err))
 }
-cv_errors
+cv_err_boosting <- cv_err_boosting[-1,]
+cv_err_boosting
+
 # ---------------------------------------------------------------------------- #
 
 # SUPPORT VECTOR MACHINES - RADIALE
@@ -202,7 +244,7 @@ KERNEL <- "radial"
 
 set.seed(28)
 for(j in 1:length(cv_data)) {
-  for (HYP in c(1,2,3,4,5,6)) {
+  for (HYP in 0.5*(1:20)) {
     err <- NULL
     # Se MTRY e' troppo grande, salto il passaggio
     for(i in 1:FOLDS){
@@ -216,11 +258,12 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "mtry", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_svm <- rbind(cv_err_svm,
                        c(cv_data_names[j], paste("SVM",KERNEL,HYP), mean(err), err))
   }
 }
-
+cv_err_svm <- cv_err_svm[-1,]
+cv_err_svm
 # ---------------------------------------------------------------------------- #
 
 # SUPPORT VECTOR MACHINES - SIGMOIDE
@@ -229,7 +272,7 @@ KERNEL <- "sigmoid"
 
 set.seed(28)
 for(j in 1:length(cv_data)) {
-  for (HYP in c(1,2,3,4,5,6)) {
+  for (HYP in 0.5*(1:20)) {
     err <- NULL
     # Se MTRY e' troppo grande, salto il passaggio
     for(i in 1:FOLDS){
@@ -243,21 +286,22 @@ for(j in 1:length(cv_data)) {
       err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
       cat("Data", j, "Fold", i, "mtry", HYP, "\n")
     }
-    cv_errors <- rbind(cv_errors,
+    cv_err_svm <- rbind(cv_err_svm,
                        c(cv_data_names[j], paste("SVM",KERNEL,HYP), mean(err), err))
   }
 }
-
+cv_err_svm
 # ---------------------------------------------------------------------------- #
 
+#Controllo errori
 
-
-
-
-
-
-
-
+cv_err_glm[,1:3] #fa tutto schifo
+cv_err_ppr[,1:3] #con HYP 2 mean_err = 0.457142857142857 -> solo cliniche (da errore con il resto)
+cv_err_cart[,1:3]
+cv_err_bagging[,1:3]
+cv_err_rf[,1:3]
+cv_err_boosting[,1:3]
+cv_err_svm[,1:3]
 
 
 # ---------------------------------------------------------------------------- #
