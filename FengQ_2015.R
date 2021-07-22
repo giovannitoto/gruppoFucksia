@@ -73,6 +73,11 @@ cv_err_svm <- matrix(NA, nrow = 1, ncol = FOLDS+3)
 colnames(cv_err_svm) <- c("dataset", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
 cv_err_svm <- as.data.frame(cv_err_svm)
 
+cv_err_elasticnet <- matrix(NA, nrow = 1, ncol = FOLDS+4)
+colnames(cv_err_elasticnet) <- c("dataset", "alpha", "model", "mean_err", paste("err", 1:FOLDS, sep = "_"))
+cv_err_elasticnet <- as.data.frame(cv_err_elasticnet)
+
+
 for (k in 1:FOLDS) { print(table(cv_data[[1]][which(folds==k, arr.ind=TRUE), 1])) }
 
 
@@ -291,6 +296,42 @@ for(j in 1:length(cv_data)) {
   }
 }
 cv_err_svm[101:200,]
+
+# ---------------------------------------------------------------------------- #
+
+# ELASTIC NET
+library(glmnet)
+
+set.seed(28)
+for (ALPHA in c(0,0.2,0.4,0.6,0.8,1)) {
+  for(j in 1:length(cv_data)) {
+    for (HYP in 10^seq(3,-3,length=30)) {
+      err <- NULL
+      for(i in 1:FOLDS){
+        testIndexes <- which(folds==i, arr.ind=TRUE)
+        x   <- model.matrix(~ ., data=cv_data[[j]][-testIndexes,-1])
+        x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
+                                               function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
+        x.v <- model.matrix(~ ., data=cv_data[[j]][testIndexes,-1])
+        x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
+                                                 function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
+        # Stimo il modello
+        fit.lasso <- glmnet(x, cv_data[[j]][-testIndexes,1], family="binomial",
+                            lambda=HYP, alpha=ALPHA)
+        # Calcolo tasso di errata classificazione
+        pred <- predict(fit.lasso, newx=x.v, type="response")
+        tmp_tab <- table(pred, cv_data[[j]][testIndexes, ]$study_condition)
+        err <- c(err, 1 - sum(diag(tmp_tab))/sum(tmp_tab))
+        cat("Data", j, "Fold", i, "alpha", ALPHA, "hyp", HYP, "\n")
+      }
+      cv_err_elasticnet <- rbind(cv_err_elasticnet,
+                                 c(cv_data_names[j], ALPHA, paste("ElasticNet",HYP), mean(err), err))
+    }
+  }
+}
+cv_err_elasticnet <- cv_err_elasticnet[-1,]
+cv_err_elasticnet
+
 # ---------------------------------------------------------------------------- #
 
 #Controllo errori
@@ -393,7 +434,7 @@ cv_err_svm[cv_err_svm$dataset == " family - cliniche + batteri",][which.min(cv_e
 
 # ---------------------------------------------------------------------------- #
 
-#Salvo risultati inrermedi
+#Salvo risultati intermedi
 
 save(cv_err_glm, cv_err_ppr, cv_err_cart, cv_err_bagging, cv_err_rf, cv_err_boosting, cv_err_svm, 
      file = "Errori_prev_FengQ.RData")
