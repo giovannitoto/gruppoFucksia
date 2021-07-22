@@ -290,7 +290,7 @@ for(j in 1:length(cv_data)) {
                        c(cv_data_names[j], paste("SVM",KERNEL,HYP), mean(err), err))
   }
 }
-cv_err_svm
+cv_err_svm[101:200,]
 # ---------------------------------------------------------------------------- #
 
 #Controllo errori
@@ -303,5 +303,8 @@ cv_err_rf[,1:3]
 cv_err_boosting[,1:3]
 cv_err_svm[,1:3]
 
+#Salvo risultati inrermedi
 
+save(cv_err_glm, cv_err_ppr, cv_err_cart, cv_err_bagging, cv_err_rf, cv_err_boosting, cv_err_svm, 
+     file = "Errori_prev_FengQ.RData")
 # ---------------------------------------------------------------------------- #
