@@ -29,9 +29,14 @@ colnames(data_fix2)[351] <- "Proteobacteria_unclassified"
 cv_data <- list(data_fix2[,c(1,2,3,7,8,9,10)], data_fix2[,c(1,4,5,6, 11:315)],
                 data_fix2[,1:315], data_fix2[,c(1,4,5,6, 316:361)],
                 data_fix2[,c(1:10, 316:361)])
+cv_data_names <- c("cliniche", "specie - batteri", 
+                   " specie - cliniche + batteri", "family - batteri",
+                   " family - cliniche + batteri")
 
-cv_data_names <- c("cliniche", "specie - batteri", " specie - cliniche + batteri",
-                    "family - batteri", " family - cliniche + batteri")
+#Per provare i modelli senza le tre variabili aggiuntive
+cv_data2 <- list(data_fix2[,c(1,2,3,7)])
+
+cv_data_names2 <- c("cliniche")
 
 # ---------------------------------------------------------------------------- #
 
@@ -317,10 +322,9 @@ if (file.exists("Errori_prev_FengQ.RData")) load("Errori_prev_FengQ.RData")
 cv_err_glm[,1:3] #fa tutto schifo
 
 #PPR
-cv_err_ppr[,1:3] #con HYP 2 mean_err = 0.523809523809524 -> solo cliniche (da errore con il resto)
+cv_err_ppr[,1:3] #-> solo cliniche (da errore con il resto)
 
 #CART
-
 #cliniche
 cv_err_cart[cv_err_cart$dataset == "cliniche",][which.min(cv_err_cart
                       [cv_err_cart$dataset == "cliniche","mean_err"]),1:3] #0.2667
@@ -338,7 +342,6 @@ cv_err_cart[cv_err_cart$dataset == " family - cliniche + batteri",][which.min(cv
                       [cv_err_cart$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.4952
 
 #BAGGING
-
 #cliniche
 cv_err_bagging[cv_err_bagging$dataset == "cliniche",][which.min(cv_err_bagging
                       [cv_err_bagging$dataset == "cliniche","mean_err"]),1:3] #0.2095
@@ -356,7 +359,6 @@ cv_err_bagging[cv_err_bagging$dataset == " family - cliniche + batteri",][which.
                       [cv_err_bagging$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.3714
 
 #RANDOM FOREST
-
 #cliniche
 cv_err_rf[cv_err_rf$dataset == "cliniche",][which.min(cv_err_rf
                       [cv_err_rf$dataset == "cliniche","mean_err"]),1:3] #0.2667
@@ -374,7 +376,6 @@ cv_err_rf[cv_err_rf$dataset == " family - cliniche + batteri",][which.min(cv_err
                       [cv_err_rf$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.4190
 
 #BOOSTING
-
 #cliniche
 cv_err_boosting[cv_err_boosting$dataset == "cliniche",][which.min(cv_err_boosting
                       [cv_err_boosting$dataset == "cliniche","mean_err"]),1:3] #0.3048
@@ -391,7 +392,6 @@ cv_err_boosting[cv_err_boosting$dataset == "family - batteri",][which.min(cv_err
 cv_err_boosting[cv_err_boosting$dataset == " family - cliniche + batteri",][which.min(cv_err_boosting
                       [cv_err_boosting$dataset == " family - cliniche + batteri","mean_err"]),1:3] #0.4381
 #SVM
-
 #cliniche
 cv_err_svm[cv_err_svm$dataset == "cliniche",][which.min(cv_err_svm
                       [cv_err_svm$dataset == "cliniche","mean_err"]),1:3] #0.3714
@@ -450,7 +450,6 @@ cv_err_elasticnet[cv_err_elasticnet$dataset == " family - cliniche + batteri" & 
   which.min(cv_err_elasticnet[cv_err_elasticnet$dataset == " family - cliniche + batteri" &
                                 cv_err_elasticnet$alpha == "1","mean_err"]),1:4] #0.5523
 #ELASTIC NET
-
 #cliniche
 cv_err_elasticnet[cv_err_elasticnet$dataset == "cliniche",][which.min(cv_err_elasticnet
                       [cv_err_elasticnet$dataset == "cliniche","mean_err"]),1:4] #0.5524
