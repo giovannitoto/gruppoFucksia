@@ -35,11 +35,6 @@ prop.table(table(v$study_condition))
 
 # ---------------------------------------------------------------------------- #
 
-# Dataset di stima e convalida
-set.seed(28)
-cb1 <- sample(1:nrow(s), trunc(nrow(s)*2/3))
-cb2 <- setdiff(1:nrow(s), cb1)
-
 # Definisco tabella per il confronto dei modelli
 tab_confronto <- matrix(NA, nrow = 1, ncol=3)
 colnames(tab_confronto) <- c("dataset", "model", "err")
@@ -86,8 +81,8 @@ datasets_s <- list(s[,c(1,2,3,7)], s[,c(1,4,5,6, 8:506)], s[,1:506],
                    s[,c(1,4,5,6, 507:571)], s[, c(1:7, 507:571)])
 datasets_v <- list(v[,c(1,2,3,7)], v[,c(1,4,5,6, 8:506)], v[,1:506],
                    v[,c(1,4,5,6, 507:571)], v[,c(1:7, 507:571)])
-datasets_names <- c("cliniche", "specie - batteri", " specie - cliniche + batteri",
-                    "family - batteri", " family - cliniche + batteri")
+datasets_names <- c("cliniche", "specie: batteri", "specie: cliniche+batteri",
+                    "family: batteri", "family: cliniche+batteri")
 
 # ---------------------------------------------------------------------------- #
 
@@ -165,7 +160,7 @@ library(e1071)
 
 set.seed(496)
 for (j in 1:length(datasets_names)) {
-  MTRY_RANGE <- 3*(1:15)[3*(1:15)<NCOL(datasets_s[[j]])]
+  MTRY_RANGE <- 3*(1:30)[3*(1:30)<NCOL(datasets_s[[j]])]
   forest.tune <- tune(randomForest, study_condition ~ ., data=datasets_s[[j]],
                       ranges=list(mtry=MTRY_RANGE),
                       tunecontrol=tune.control(cross=5),
@@ -178,7 +173,7 @@ for (j in 1:length(datasets_names)) {
   e.model <- 1 - sum(diag(et.model))/sum(et.model)
   tab_confronto <- rbind(tab_confronto,
                          c(datasets_names[[j]],paste("Random Forest - mtry", best.mtry), e.model))
-  cat("Data", j, "\n")
+  cat("Data", j, "mtry", best.mtry,"\n")
   rm(list=c("forest.tune","fit.model","y.model"))
 }
 
@@ -197,17 +192,15 @@ for (KERNEL in c("sigmoid", "radial")) {
                        kernel=KERNEL)
     best.cost <- fit.svm.cv$best.parameters
     fit.model <- svm(study_condition ~ ., data=datasets_s[[j]],
-                     cost=best.cost, probability=T, kernel=KERNEL)
+                     cost=best.cost[1,1], probability=T, kernel=KERNEL)
     y.model <- predict(fit.model, newdata=datasets_v[[j]], decision.values=T)
     et.model <- table(y.model, datasets_v[[j]]$study_condition)
     e.model <- 1 - sum(diag(et.model))/sum(et.model)
     tab_confronto <- rbind(tab_confronto,
                            c(datasets_names[[j]], paste("SVM",KERNEL,"- cost",best.cost), e.model))
-    cat("Data", j, KERNEL, "\n")
+    cat("Data", j, KERNEL, "cost", best.cost[1,1],"\n")
   }
 }
-
-tab_confronto
 
 # ---------------------------------------------------------------------------- #
 
@@ -215,7 +208,7 @@ tab_confronto
 library(ada)
 
 set.seed(28)
-for (HYP in c(50,100,200)) {
+for (HYP in c(50,100,150,200)) {
   for (j in 1:length(datasets_names)) {
     fit.model <- ada(study_condition ~ ., data=datasets_s[[j]], iter=HYP)
     # Previsione
@@ -224,9 +217,8 @@ for (HYP in c(50,100,200)) {
     e.model <- 1 - sum(diag(et.model))/sum(et.model)
     tab_confronto <- rbind(tab_confronto,
                            c(datasets_names[[j]], paste("Boosting",HYP), e.model))
-    cat("Data", j, "\n")
+    cat("Data", j, "iter", HYP, "\n")
   }
-  
 }
 
 # ---------------------------------------------------------------------------- #
@@ -307,7 +299,7 @@ library(gglasso)
 # poi mettere magari assiemem quelle delle reads
 # e poi per le specie devo scegliere un livello della tassonomia
 
-j = 5
+j = 3
 
 y <- as.numeric(datasets_s[[j]]$study_condition=="adenoma")
 y[y==0] <- -1
@@ -342,5 +334,14 @@ e.gglasso1 <- 1 - sum(diag(et.gglasso1))/sum(et.gglasso1)
 e.gglasso2 <- 1 - sum(diag(et.gglasso2))/sum(et.gglasso2)
 
 c(e.gglasso1, e.gglasso2)
+
+# ---------------------------------------------------------------------------- #
+
+
+
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
