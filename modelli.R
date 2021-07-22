@@ -50,10 +50,39 @@ tab_confronto <- as.data.frame(tab_confronto)
 
 # ---------------------------------------------------------------------------- #
 
+# PROBLEMIIII
+colnames(s) # 512, 519, 523, 524, 528, 535, 536, 557, 569
+colnames(s)[512] <- "Bacillales_unclassified" 
+colnames(v)[512] <- "Bacillales_unclassified" 
+
+colnames(s)[519] <- "Candidatus_Gastranaerophilales_unclassified" 
+colnames(v)[519] <- "Candidatus_Gastranaerophilales_unclassified" 
+
+colnames(s)[523] <- "Clostridiales_Family_XIII_Incertae_Sedis" 
+colnames(v)[523] <- "Clostridiales_Family_XIII_Incertae_Sedis" 
+
+colnames(s)[524] <- "Clostridiales_unclassified" 
+colnames(v)[524] <- "Clostridiales_unclassified" 
+
+colnames(s)[528] <- "Corynebacteriales_unclassified" 
+colnames(v)[528] <- "Corynebacteriales_unclassified" 
+
+colnames(s)[535] <- "Eukaryota_unclassified" 
+colnames(v)[535] <- "Eukaryota_unclassified" 
+
+colnames(s)[536] <- "Firmicutes_unclassified" 
+colnames(v)[536] <- "Firmicutes_unclassified" 
+
+colnames(s)[557] <- "Proteobacteria_unclassified" 
+colnames(v)[557] <- "Proteobacteria_unclassified" 
+
+colnames(s)[569] <- "Tissierellia_unclassified" 
+colnames(v)[569] <- "Tissierellia_unclassified" 
+
 datasets_s <- list(s[,c(1,2,3,7)], s[,c(1,4,5,6, 8:506)], s[,1:506],
-                   s[,c(1,4,5,6, 507:571)], s[, c(1:7, 506:571)])
+                   s[,c(1,4,5,6, 507:571)], s[, c(1:7, 507:571)])
 datasets_v <- list(v[,c(1,2,3,7)], v[,c(1,4,5,6, 8:506)], v[,1:506],
-                   v[,c(1,4,5,6, 507:571)], v[,c(1:7, 506:571)])
+                   v[,c(1,4,5,6, 507:571)], v[,c(1:7, 507:571)])
 datasets_names <- c("specie - cliniche", "specie - batteri", " specie - cliniche + batteri",
                     "family - batteri", " family - cliniche + batteri")
 
@@ -81,9 +110,9 @@ library(glmnet)
 
 for (j in 1:length(datasets_names)) {
   x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-  #x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+  # x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
   x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
-  #x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
+  # x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
   
   fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
                          family="binomial", type.measure="class",
@@ -97,6 +126,8 @@ for (j in 1:length(datasets_names)) {
   cat("Data", j, "\n")
 }
 
+
+tab_confronto
 # ---------------------------------------------------------------------------- #
 
 # ELASTIC NET
@@ -121,6 +152,114 @@ for (HYP in c(0,0.25,0.5,0.75)) {
     cat("Data", j, "alpha", HYP, "\n")
   }
 }
+
+tab_confronto
+
+# ---------------------------------------------------------------------------- #
+# Group lasso
+library(gglasso)
+
+# Si può fare solo con il dataset quello con tutto a livello di specie
+# Per raggrupppare le covariate posso mettere tutte quelle cliniche assieme (in caso le droppa),
+# poi mettere magari assiemem quelle delle reads
+# e poi per le specie devo scegliere un livello della tassonomia
+
+j = 3
+
+# y <- ifelse(datasets_s[[j]]$study_condition == "adenoma", 1, 0)
+
+x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
+#x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+
+colnames(x)
+
+dim(rowData(se_fix))
+colnames(rowData(se_fix))
+rowData(se_fix)$Family
+
+dim(x)
+colnames(x)
+
+family <- c(1,1,1,2,2,2,1,rowData(se_fix)$Family) # e poi gli indici delle famigile
+
+##Cross Validation
+#
+# PENSO CHE BISOGNA STANDARDIZZARE
+set.seed(55)
+fit.cv = cv.gglasso(x=x, y=y,
+                    pred.loss = "misclass",
+                    group=family, nfolds=5)
+plot(fit.cv)
+#
+#lambda.min is at the border
+#
+set.seed(55)
+fit.cv=cv.gglasso(x=X,y=Y,group=grp,nfolds=10, lambda.factor=0.0004)
+plot(fit.cv)
+
+#Pick the best Lambda
+lmbda=fit.cv$lambda.1se
+lmbda1 <- fit.cv$lambda.min
+plot(fit)
+abline(v=log(lmbda), lty=2, col=2)
+abline(v=log(lmbda1), lty=2, col=2)
+
+coefs=coef(object=fit,s=lmbda)
+coefs1=coef(object=fit,s=lmbda1)
+cbind(coefs,coefs1)
+
+
+
+#At best lambda get coefficients and fitted values
+plt=cbind(Y,predict(object=fit, newx=X, s=lmbda),predict(object=fit, newx=X, s=lmbda1)) #,type='link'))
+matplot(plt,main="Predicted vs Actual", type='l',lwd=2,
+        ylab="Unemplyoment %",
+        xlab="Time", xlim=c(1,65))
+grid()
+legend(x=40,y=5,legend=c("Actual","Fitted-1se","Fitted-min", "Predicted"), fill=1:4,bty="n",cex=0.7)
+#
+#
+#Get forward looking projections
+X.p=as.matrix(proj[,-c(1,4)]) #Remove Dates and Unemployment from the model matrix 
+plt=cbind(proj$Unemployment.Rate, predict(object=fit,
+                                          newx=X.p, s=lmbda), predict(object=fit,
+                                                                      newx=X.p, s=lmbda1)) #,type='link'))
+matplot(51:63,plt,main="Predicted vs Fed Projections",type='l',lwd=2,
+        ylab="Unemplyoment %",
+        xlab="Time", add=T, col=4)
+#
+#
+#-----there is a discontinuity between fitted and projected
+#
+#-----connection with the previous prediction
+#At best lambda get coefficients and fitted values
+plt=cbind(Y,predict(object=fit, newx=X, s=lmbda),predict(object=fit, newx=X, s=lmbda1)) #,type='link'))
+matplot(plt,main="Predicted vs Actual", type='l',lwd=2,
+        ylab="Unemplyoment %",
+        xlab="Time", xlim=c(1,65))
+grid()
+legend(x=40,y=5,legend=c("Actual","Fitted-1se","Fitted-min", "Predicted"), fill=1:4,bty="n",cex=0.7)
+#
+#
+#
+#
+#Get forward looking projections
+X.p1<- rbind(X[nrow(X),],X.p)        
+plt=cbind(c(Y[length(Y)],proj$Unemployment.Rate), predict(object=fit,
+                                                          newx=X.p1, s=lmbda), predict(object=fit,
+                                                                                       newx=X.p1, s=lmbda1)) #,type='link'))
+matplot(50:63,plt,main="Predicted vs Fed Projections",type='l',lwd=2,
+        ylab="Unemplyoment %",
+        xlab="Time", add=T, col=4)
+#        
+#   
+#the model has all the groups and hence all the variables 
+#are in the regression equation. 
+############
+rm(list=ls())
+#------------------
+#------------------
 
 # ---------------------------------------------------------------------------- #
 
@@ -147,6 +286,7 @@ for (j in 1:length(datasets_names)) {
   rm(list=c("forest.tune","fit.model","y.model"))
 }
 
+tab_confronto
 
 # ---------------------------------------------------------------------------- #
 
@@ -173,6 +313,9 @@ for (KERNEL in c("sigmoid", "radial")) {
   }
 }
 
+
+tab_confronto
+
 # ---------------------------------------------------------------------------- #
 
 ### BOOSTING
@@ -186,11 +329,12 @@ for (j in 1:length(datasets_names)) {
   e.model <- 1 - sum(diag(et.model))/sum(et.model)
   tab_confronto <- rbind(tab_confronto,
                          c(datasets_names[[j]], paste("Boosting"), e.model))
-  cat("Data", j, "/n")
+  cat("Data", j, "\n")
 }
 
+tab_confronto
 
-
+# ---------------------------------------------------------------------------- #
 
 
 
