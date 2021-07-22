@@ -28,7 +28,6 @@ idx <- sample(1:nrow(sb0), trunc(nrow(sb1)*0.6/0.4))
 sb0 <- sb0[idx, ]
 # Sostituisco data_fix con la versione bilanciata
 s <- rbind(sb1, sb0)  
-prop.table(table(s$study_condition))
 rm(list=c("sb1","sb0","idx"))
 
 prop.table(table(s$study_condition))
@@ -42,8 +41,6 @@ cb1 <- sample(1:nrow(s), trunc(nrow(s)*2/3))
 cb2 <- setdiff(1:nrow(s), cb1)
 
 # Definisco tabella per il confronto dei modelli
-tab_confronto <- c("DATA", "MODELLO", "TASSO ERRATA CLASSIFICAZIONE")
-
 tab_confronto <- matrix(NA, nrow = 1, ncol=3)
 colnames(tab_confronto) <- c("dataset", "model", "err")
 tab_confronto <- as.data.frame(tab_confronto)
@@ -79,11 +76,17 @@ colnames(v)[557] <- "Proteobacteria_unclassified"
 colnames(s)[569] <- "Tissierellia_unclassified" 
 colnames(v)[569] <- "Tissierellia_unclassified" 
 
+# In alternativa, si puo' fare in un colpo solo
+# library(stringr)
+# colnames(s) <- str_replace_all(colnames(s), " ", "_")
+# colnames(v) <- str_replace_all(colnames(v), " ", "_")
+
+
 datasets_s <- list(s[,c(1,2,3,7)], s[,c(1,4,5,6, 8:506)], s[,1:506],
                    s[,c(1,4,5,6, 507:571)], s[, c(1:7, 507:571)])
 datasets_v <- list(v[,c(1,2,3,7)], v[,c(1,4,5,6, 8:506)], v[,1:506],
                    v[,c(1,4,5,6, 507:571)], v[,c(1:7, 507:571)])
-datasets_names <- c("specie - cliniche", "specie - batteri", " specie - cliniche + batteri",
+datasets_names <- c("cliniche", "specie - batteri", " specie - cliniche + batteri",
                     "family - batteri", " family - cliniche + batteri")
 
 # ---------------------------------------------------------------------------- #
@@ -110,10 +113,11 @@ library(glmnet)
 
 for (j in 1:length(datasets_names)) {
   x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-  # x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+  x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
+                                         function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
   x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
-  # x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
-  
+  x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
+                                           function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
   fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
                          family="binomial", type.measure="class",
                          alpha=1, nfolds=10)
@@ -127,19 +131,19 @@ for (j in 1:length(datasets_names)) {
 }
 
 
-tab_confronto
 # ---------------------------------------------------------------------------- #
 
 # ELASTIC NET
 library(glmnet)
 
-for (HYP in c(0,0.25,0.5,0.75)) {
+for (HYP in c(0,0.2,0.4,0.6,0.8)) {
   for (j in 1:length(datasets_names)) {
     x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-    #x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+    x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
+                                           function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
     x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
-    #x.v[,colnames(x)!="gendermale"] <- scale(x.v[,colnames(x)!="gendermale"])
-    
+    x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
+                                             function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
     fit.model <- cv.glmnet(x, datasets_s[[j]]$study_condition,
                            family="binomial", type.measure="class",
                            alpha=HYP, nfolds=10)
@@ -153,8 +157,6 @@ for (HYP in c(0,0.25,0.5,0.75)) {
   }
 }
 
-tab_confronto
-
 # ---------------------------------------------------------------------------- #
 # Group lasso
 library(gglasso)
@@ -166,13 +168,16 @@ library(gglasso)
 
 j = 3
 
-# y <- ifelse(datasets_s[[j]]$study_condition == "adenoma", 1, 0)
+y <- ifelse(datasets_s[[j]]$study_condition == "adenoma", 1, 0)
 
 x   <- model.matrix(~ ., data=datasets_s[[j]][,-1])
-#x[,colnames(x)!="gendermale"] <- scale(x[,colnames(x)!="gendermale"])
+x[,colnames(x)!="gendermale"] <- apply(x[,colnames(x)!="gendermale"], 2,
+                                       function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
 x.v <- model.matrix(~ ., data=datasets_v[[j]][,-1])
+x.v[,colnames(x)!="gendermale"] <- apply(x.v[,colnames(x)!="gendermale"], 2,
+                                         function(y) (y - mean(y)) / sd(y) ^ as.logical(sd(y)))
 
-colnames(x)
+colnames(x)[1:20]
 
 dim(rowData(se_fix))
 colnames(rowData(se_fix))
@@ -188,7 +193,7 @@ family <- c(1,1,1,2,2,2,1,rowData(se_fix)$Family) # e poi gli indici delle famig
 # PENSO CHE BISOGNA STANDARDIZZARE
 set.seed(55)
 fit.cv = cv.gglasso(x=x, y=y,
-                    pred.loss = "misclass",
+                    loss="ls", pred.loss = "misclass",
                     group=family, nfolds=5)
 plot(fit.cv)
 #
@@ -269,11 +274,11 @@ library(e1071)
 
 set.seed(496)
 for (j in 1:length(datasets_names)) {
-  MTRY_RANGE <- 2*(1:20)[2*(1:20)<NCOL(datasets_s[[j]])]
+  MTRY_RANGE <- 3*(1:15)[3*(1:15)<NCOL(datasets_s[[j]])]
   forest.tune <- tune(randomForest, study_condition ~ ., data=datasets_s[[j]],
                       ranges=list(mtry=MTRY_RANGE),
                       tunecontrol=tune.control(cross=5),
-                      ntree=100)
+                      ntree=50)
   best.mtry <- min(forest.tune$best.parameters, NCOL(datasets_s[[j]]))
   fit.model <- randomForest(study_condition ~ ., data=datasets_s[[j]], mtry=best.mtry)
   # Effettuo previsioni
@@ -286,8 +291,6 @@ for (j in 1:length(datasets_names)) {
   rm(list=c("forest.tune","fit.model","y.model"))
 }
 
-tab_confronto
-
 # ---------------------------------------------------------------------------- #
 
 ### SUPPORT VECTOR MACHINES (SVM)
@@ -298,21 +301,20 @@ set.seed(496)
 for (KERNEL in c("sigmoid", "radial")) {
   for (j in 1:length(datasets_names)) {
     fit.svm.cv <- tune(svm, study_condition ~ ., data=datasets_s[[j]],
-                       ranges=list(cost=2^(-2:2)),
+                       ranges=list(cost=2^(-6:0)),
                        tunecontrol=tune.control(cross=5),
                        kernel=KERNEL)
     best.cost <- fit.svm.cv$best.parameters
     fit.model <- svm(study_condition ~ ., data=datasets_s[[j]],
-                     cost=best.cost, probability=T)
-    y.model <- predict(fit.model, newdata=v, decision.values=T)
-    et.model <- table(y.model, osserv=datasets_v[[j]]$study_condition)
+                     cost=best.cost, probability=T, kernel=KERNEL)
+    y.model <- predict(fit.model, newdata=datasets_v[[j]], decision.values=T)
+    et.model <- table(y.model, datasets_v[[j]]$study_condition)
     e.model <- 1 - sum(diag(et.model))/sum(et.model)
     tab_confronto <- rbind(tab_confronto,
                            c(datasets_names[[j]], paste("SVM",KERNEL,"- cost",best.cost), e.model))
-    cat("Data", j, "kernel", KERNEL, "\n")
+    cat("Data", j, KERNEL, "\n")
   }
 }
-
 
 tab_confronto
 
@@ -321,22 +323,90 @@ tab_confronto
 ### BOOSTING
 library(ada)
 
-for (j in 1:length(datasets_names)) {
-  fit.model <- ada(study_condition ~ ., data=datasets_s[[j]], iter=150)
-  # Previsione
-  y.model <- predict(fit.model, newdata=datasets_v[[j]])
-  et.model <- table(y.model, datasets_v[[j]]$study_condition)
-  e.model <- 1 - sum(diag(et.model))/sum(et.model)
-  tab_confronto <- rbind(tab_confronto,
-                         c(datasets_names[[j]], paste("Boosting"), e.model))
-  cat("Data", j, "\n")
+set.seed(28)
+for (HYP in c(50,100,200)) {
+  for (j in 1:length(datasets_names)) {
+    fit.model <- ada(study_condition ~ ., data=datasets_s[[j]], iter=HYP)
+    # Previsione
+    y.model <- predict(fit.model, newdata=datasets_v[[j]])
+    et.model <- table(y.model, datasets_v[[j]]$study_condition)
+    e.model <- 1 - sum(diag(et.model))/sum(et.model)
+    tab_confronto <- rbind(tab_confronto,
+                           c(datasets_names[[j]], paste("Boosting",HYP), e.model))
+    cat("Data", j, "\n")
+  }
+  
 }
-
-tab_confronto
 
 # ---------------------------------------------------------------------------- #
 
+# ALBERO DI CLASSIFICAZIONE
+library(tree)
 
+set.seed(28)
+for (j in 1:length(datasets_names)) {
+  fit.tree <- tree(study_condition ~ ., data=datasets_s[[j]], split="deviance",
+                   control=tree.control(nobs=nrow(datasets_s[[j]]),
+                                        minsize=1,
+                                        mindev=0))
+  cv.tree <- cv.tree(fit.tree, FUN=prune.tree, K=5, method="misclass")
+  J <- min(cv.tree$size[cv.tree$dev==min(cv.tree$dev)])
+  # Stimo modello finale
+  final.tree <- prune.tree(fit.tree, best=J)
+  y.treecv <- predict(final.tree, newdata=datasets_v[[j]], type="class")
+  et.model <- table(y.treecv, datasets_v[[j]]$study_condition)
+  e.model <- 1 - sum(diag(et.model))/sum(et.model)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]], paste("Albero di Classificazione",J), e.model))
+  cat("Data", j, "best", J, "\n")
+}
+
+# ---------------------------------------------------------------------------- #
+
+# MARS
+library(polspline)
+
+set.seed(28)
+for (j in 1:length(datasets_names)) {
+  fit.mars <- polyclass(datasets_s[[j]]$study_condition, datasets_s[[j]][,-1])  
+  
+  y.mars <- ppolyclass(datasets_v[[j]][,-1], fit.mars)[,2]
+  et.mars <- table(y.mars>0.5, datasets_v[[j]]$study_condition)
+  e.mars <- 1 - sum(diag(et.mars))/sum(et.mars)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]], paste("MARS"), e.mars))
+  cat("Data", j, "\n")
+}
+
+# ---------------------------------------------------------------------------- #
+
+# BAGGING con OOB
+
+library(ipred)
+
+set.seed(28)
+for (j in 1:length(datasets_names)) {
+  # Costruisco ciclo per vedere se il numero di alberi costruito (nbag) e' sufficiente
+  err <- matrix(NA, 15, 2)
+  for (i in 1:NROW(err)) {
+    err[i,] <- c(i*10, bagging(study_condition ~ ., data=datasets_s[[j]],
+                               nbagg=i*10, coob=T)$err)
+    cat(i*10, " ")
+  }
+  NBAGG <- err[which.min(err[,2]),1]
+  # Stimo modello migliore
+  fit.bagging <- bagging(study_condition ~ .,data=datasets_s[[j]],
+                         coob=T, nbagg=NBAGG)
+  # Previsione
+  y.bagging <- predict(fit.bagging, newdata=datasets_v[[j]])
+  et.bagging <- table(y.bagging, datasets_v[[j]]$study_condition)
+  e.bagging <- 1 - sum(diag(et.bagging))/sum(et.bagging)
+  tab_confronto <- rbind(tab_confronto,
+                         c(datasets_names[[j]], paste("Bagging",NBAGG), e.bagging))
+  cat("Data", j, "nbagg", NBAGG, "\n")
+}
+
+# ---------------------------------------------------------------------------- #
 
 
 
