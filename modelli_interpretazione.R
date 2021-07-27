@@ -106,7 +106,7 @@ fit.forest <- randomForest(study_condition ~ ., data=datasets_s[[4]],
                            xtest=datasets_v[[4]][,-1], ytest=datasets_v[[4]][,1])
 
 # Grafico per importanza delle var. nella random forest
-varImpPlot(fit.forest)
+varImpPlot(fit.forest, n.var=20, main="Random Forest")
 
 # fit.forest$importance
 
@@ -127,7 +127,7 @@ fit.boosting <- ada(study_condition ~ ., data=datasets_s[[4]], iter=200,
                     test.y=datasets_v[[4]][,1])
 
 # Grafico dell'importanza delle variabili
-varplot(fit.boosting)
+varplot(fit.boosting, max.var.show=20, main="Boosting")
 
 # Previsione
 y.boosting <- predict(fit.boosting, newdata=datasets_v[[4]])
